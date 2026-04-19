@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/CodeFromSpec/tool-staleness-check/compare/v1.0.1...v1.0.2) (2026-04-19)
+
+
+### Bug Fixes
+
+* publish binaries (workflow) ([#6](https://github.com/CodeFromSpec/tool-staleness-check/issues/6)) ([6562063](https://github.com/CodeFromSpec/tool-staleness-check/commit/65620635dff54f6c511aa390ac62cf724408d254))
+
 ## [1.0.1](https://github.com/CodeFromSpec/tool-staleness-check/compare/v1.0.0...v1.0.1) (2026-04-19)
 
 
