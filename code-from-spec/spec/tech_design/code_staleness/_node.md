@@ -1,0 +1,71 @@
+---
+version: 2
+parent_version: 10
+depends_on:
+  - path: ROOT/domain/staleness
+    version: 6
+  - path: ROOT/domain/output
+    version: 6
+  - path: ROOT/tech_design/logical_names
+    version: 3
+implements:
+  - cmd/staleness-check/codestaleness.go
+---
+
+# ROOT/tech_design/code_staleness
+
+## Intent
+
+Verifies code staleness for a single node. The caller
+invokes this function once per discovered node and
+collects the results.
+
+## Contracts
+
+### Interface
+
+```go
+func CheckCodeStaleness(
+    node DiscoveredNode,
+    cache map[string]*Frontmatter,
+) []StalenessResult
+```
+
+`CheckCodeStaleness` checks one node for code staleness.
+Returns an empty slice if all files are up to date or
+the node has no `implements`. Returns one
+`StalenessResult` per problem found.
+
+The `cache` maps file paths to parsed frontmatters,
+populated by the caller before invoking this function.
+Every discovered node has an entry in the cache: a valid
+`*Frontmatter` on success, or `nil` if frontmatter
+parsing failed. If a file path has no entry in the
+cache, the file does not exist.
+
+### Algorithm
+
+Check in this order. Steps 1-3 are blocking — return
+immediately with a single result. Step 4 produces one
+result per problematic file.
+
+1. Look up the node's frontmatter in the cache. If not
+   found or nil → return `[unreadable_frontmatter]`.
+2. Check that `Version` is not nil. If nil → return
+   `[no_version]`.
+3. If `Implements` is empty → return empty slice.
+4. For each file in `Implements`, produce at most one
+   `StalenessResult` with `Node` = the node's logical
+   name, `File` = the file path, and `Status` set by
+   the first matching condition:
+   - File does not exist → `missing`.
+   - `ParseSpecComment` returns no spec comment →
+     `no_spec_comment`.
+   - `ParseSpecComment` returns malformed comment →
+     `malformed_spec_comment`.
+   - `LogicalNamesMatch` between the spec comment's
+     logical name and the node's `LogicalName` returns
+     false → `wrong_node`.
+   - `*node.Version != spec_comment.Version` → `stale`.
+   - None of the above → file is up to date, omit from
+     results.
