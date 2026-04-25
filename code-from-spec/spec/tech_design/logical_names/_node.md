@@ -1,6 +1,6 @@
 ---
-version: 3
-parent_version: 10
+version: 4
+parent_version: 11
 depends_on:
   - path: ROOT/domain/specifications
     version: 2

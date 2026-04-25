@@ -1,13 +1,13 @@
 ---
-version: 5
-parent_version: 10
+version: 7
+parent_version: 11
 depends_on:
   - path: ROOT/domain/specifications
     version: 2
   - path: ROOT/domain/external_dependencies
     version: 4
   - path: ROOT/tech_design/logical_names
-    version: 3
+    version: 4
 implements:
   - cmd/staleness-check/discovery.go
 ---

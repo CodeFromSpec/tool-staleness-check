@@ -1,4 +1,4 @@
-// spec: ROOT/tech_design/spec_comment@v6
+// spec: ROOT/tech_design/spec_comment@v7
 package main
 
 import (

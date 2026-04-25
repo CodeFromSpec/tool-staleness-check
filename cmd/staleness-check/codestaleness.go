@@ -1,4 +1,4 @@
-// spec: ROOT/tech_design/code_staleness@v2
+// spec: ROOT/tech_design/code_staleness@v4
 package main
 
 import (
@@ -10,16 +10,16 @@ import (
 // an empty slice if all files are up to date or the node has no `implements`.
 // Returns one StalenessResult per problem found.
 //
-// The cache maps file paths (relative to code-from-spec/) to parsed
+// The cache maps file paths (relative to the project root) to parsed
 // frontmatters. A nil value means frontmatter parsing failed. A missing key
 // means the file does not exist.
 //
 // Algorithm (from ROOT/tech_design/code_staleness):
-//   1. Look up frontmatter in cache — missing or nil → unreadable_frontmatter (blocking)
-//   2. Check Version is not nil — nil → no_version (blocking)
-//   3. If Implements is empty → return empty slice (blocking)
-//   4. For each file in Implements, check conditions in order and produce
-//      at most one StalenessResult per file.
+//  1. Look up frontmatter in cache — missing or nil → unreadable_frontmatter (blocking)
+//  2. Check Version is not nil — nil → no_version (blocking)
+//  3. If Implements is empty → return empty slice (blocking)
+//  4. For each file in Implements, check conditions in order and produce
+//     at most one StalenessResult per file.
 func CheckCodeStaleness(
 	node DiscoveredNode,
 	cache map[string]*Frontmatter,

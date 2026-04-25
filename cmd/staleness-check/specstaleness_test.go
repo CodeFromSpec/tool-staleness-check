@@ -1,4 +1,4 @@
-// spec: TEST/tech_design/spec_staleness@v1
+// spec: TEST/tech_design/spec_staleness@v2
 package main
 
 import (

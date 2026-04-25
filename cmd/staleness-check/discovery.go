@@ -1,4 +1,4 @@
-// spec: ROOT/tech_design/discovery@v5
+// spec: ROOT/tech_design/discovery@v7
 package main
 
 import (

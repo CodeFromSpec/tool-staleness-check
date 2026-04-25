@@ -1,17 +1,17 @@
 ---
-version: 6
-parent_version: 10
+version: 9
+parent_version: 11
 depends_on:
   - path: ROOT/domain/output
     version: 6
   - path: ROOT/tech_design/discovery
-    version: 5
+    version: 7
   - path: ROOT/tech_design/frontmatter
-    version: 6
+    version: 7
   - path: ROOT/tech_design/spec_staleness
-    version: 4
+    version: 5
   - path: ROOT/tech_design/code_staleness
-    version: 2
+    version: 4
 implements:
   - cmd/staleness-check/main.go
 ---
@@ -118,6 +118,6 @@ surfaced as statuses during verification.
 
 ### YAML serialization
 
-Use `gopkg.in/yaml.v3` for output. The output struct
+Use `github.com/goccy/go-yaml` for output. The output struct
 must produce the exact field names and format prescribed
 by `ROOT/domain/output`.

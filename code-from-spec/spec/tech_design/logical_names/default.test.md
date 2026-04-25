@@ -1,6 +1,6 @@
 ---
-version: 2
-parent_version: 3
+version: 3
+parent_version: 4
 implements:
   - cmd/staleness-check/logicalnames_test.go
 ---

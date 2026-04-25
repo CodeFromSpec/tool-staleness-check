@@ -1,4 +1,4 @@
-// spec: ROOT/tech_design/spec_staleness@v4
+// spec: ROOT/tech_design/spec_staleness@v5
 package main
 
 // StalenessResult represents a single staleness problem detected for a node.
@@ -22,12 +22,12 @@ type StalenessResult struct {
 // means the file does not exist.
 //
 // Algorithm steps (from ROOT/tech_design/spec_staleness):
-//   1. Look up frontmatter in cache — if missing or nil → invalid_frontmatter (blocking)
-//   2. Check required fields — version must be present; parent_version for non-root (blocking)
-//   3. Name verification — title must match logical name
-//   4. Parent check — parent version must match
-//   5. Dependency check — each dependency version must match
-//   6. Return collected results
+//  1. Look up frontmatter in cache — if missing or nil → invalid_frontmatter (blocking)
+//  2. Check required fields — version must be present; parent_version for non-root (blocking)
+//  3. Name verification — title must match logical name
+//  4. Parent check — parent version must match
+//  5. Dependency check — each dependency version must match
+//  6. Return collected results
 func CheckSpecStaleness(
 	node DiscoveredNode,
 	cache map[string]*Frontmatter,

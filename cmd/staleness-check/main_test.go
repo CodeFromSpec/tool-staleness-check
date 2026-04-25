@@ -1,4 +1,4 @@
-// spec: TEST/tech_design/main@v1
+// spec: TEST/tech_design/main@v2
 package main
 
 import (

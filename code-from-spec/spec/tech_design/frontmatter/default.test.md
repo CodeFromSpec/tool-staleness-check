@@ -1,6 +1,6 @@
 ---
-version: 1
-parent_version: 6
+version: 2
+parent_version: 7
 implements:
   - cmd/staleness-check/frontmatter_test.go
 ---

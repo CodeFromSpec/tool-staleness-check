@@ -1,6 +1,6 @@
 ---
-version: 1
-parent_version: 2
+version: 2
+parent_version: 4
 implements:
   - cmd/staleness-check/codestaleness_test.go
 ---

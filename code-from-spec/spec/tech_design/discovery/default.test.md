@@ -1,6 +1,6 @@
 ---
-version: 2
-parent_version: 5
+version: 3
+parent_version: 7
 implements:
   - cmd/staleness-check/discovery_test.go
 ---

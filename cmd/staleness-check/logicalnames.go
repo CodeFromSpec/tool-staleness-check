@@ -1,4 +1,4 @@
-// spec: ROOT/tech_design/logical_names@v3
+// spec: ROOT/tech_design/logical_names@v4
 package main
 
 import (

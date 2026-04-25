@@ -1,4 +1,4 @@
-// spec: ROOT/tech_design/frontmatter@v6
+// spec: ROOT/tech_design/frontmatter@v7
 package main
 
 import (
@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"gopkg.in/yaml.v3"
+	"github.com/goccy/go-yaml"
 )
 
 // DependsOn represents a cross-tree dependency with its known version.
@@ -21,10 +21,10 @@ type DependsOn struct {
 // a node file. All fields are optional at the parsing level — validation
 // of required fields happens during staleness verification.
 type Frontmatter struct {
-	Version       *int       `yaml:"version"`
-	ParentVersion *int       `yaml:"parent_version"`
+	Version       *int        `yaml:"version"`
+	ParentVersion *int        `yaml:"parent_version"`
 	DependsOn     []DependsOn `yaml:"depends_on"`
-	Implements    []string   `yaml:"implements"`
+	Implements    []string    `yaml:"implements"`
 	// Title is the text after "# " on the first non-empty line after the
 	// frontmatter closing "---". Empty string if missing or malformed.
 	Title string `yaml:"-"`

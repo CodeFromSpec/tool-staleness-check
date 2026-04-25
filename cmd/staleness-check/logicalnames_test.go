@@ -1,4 +1,4 @@
-// spec: TEST/tech_design/logical_names@v2
+// spec: TEST/tech_design/logical_names@v3
 package main
 
 import (

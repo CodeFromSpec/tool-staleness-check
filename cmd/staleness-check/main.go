@@ -1,4 +1,4 @@
-// spec: ROOT/tech_design/main@v6
+// spec: ROOT/tech_design/main@v9
 package main
 
 import (
@@ -6,7 +6,7 @@ import (
 	"os"
 	"sort"
 
-	"gopkg.in/yaml.v3"
+	"github.com/goccy/go-yaml"
 )
 
 // helpMessage is the exact help text prescribed by the spec (ROOT/tech_design/main).
@@ -172,7 +172,8 @@ func main() {
 		CodeStaleness: buildCodeEntries(codeResults),
 	}
 
-	// Encode the output as YAML to stdout using gopkg.in/yaml.v3.
+	// Encode the output as YAML to stdout using github.com/goccy/go-yaml
+	// (required by ROOT/tech_design Dependencies constraint).
 	encoder := yaml.NewEncoder(os.Stdout)
 	if err := encoder.Encode(&out); err != nil {
 		fmt.Fprintf(os.Stderr, "error: failed to encode YAML output: %v\n", err)

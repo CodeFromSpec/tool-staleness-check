@@ -1,5 +1,5 @@
 ---
-version: 10
+version: 11
 parent_version: 9
 ---
 
@@ -24,7 +24,7 @@ Go (minimum 1.22).
 
 ### Dependencies
 
-- Standard library only, plus `gopkg.in/yaml.v3` for YAML
+- Standard library only, plus `github.com/goccy/go-yaml` for YAML
   parsing and output.
 - No test framework beyond the standard `testing` package.
 

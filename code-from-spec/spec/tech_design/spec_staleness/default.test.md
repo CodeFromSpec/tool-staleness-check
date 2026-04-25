@@ -1,6 +1,6 @@
 ---
-version: 1
-parent_version: 4
+version: 2
+parent_version: 5
 implements:
   - cmd/staleness-check/specstaleness_test.go
 ---
