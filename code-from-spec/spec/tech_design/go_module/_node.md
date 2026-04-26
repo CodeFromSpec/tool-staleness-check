@@ -1,6 +1,6 @@
 ---
-version: 3
-parent_version: 11
+version: 4
+parent_version: 12
 ---
 
 # ROOT/tech_design/go_module
@@ -9,11 +9,6 @@ parent_version: 11
 
 Documents the Go module configuration (`go.mod`) and how
 it is managed.
-
-## Contracts
-
-The module path is:
-`github.com/CodeFromSpec/tool-staleness-check/v2`
 
 ## Constraints
 

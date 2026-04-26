@@ -1,6 +1,6 @@
 ---
-version: 10
-parent_version: 1
+version: 11
+parent_version: 2
 depends_on:
   - path: ROOT/domain/name_verification
     version: 3
@@ -9,7 +9,7 @@ depends_on:
   - path: ROOT/domain/staleness
     version: 7
   - path: ROOT/tech_design/internal/logical_names
-    version: 8
+    version: 9
 implements:
   - internal/specstaleness/specstaleness.go
 ---

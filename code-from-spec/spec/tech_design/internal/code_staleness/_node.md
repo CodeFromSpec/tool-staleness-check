@@ -1,13 +1,13 @@
 ---
-version: 9
-parent_version: 1
+version: 10
+parent_version: 2
 depends_on:
   - path: ROOT/domain/output
     version: 7
   - path: ROOT/domain/staleness
     version: 7
   - path: ROOT/tech_design/internal/logical_names
-    version: 8
+    version: 9
 implements:
   - internal/codestaleness/codestaleness.go
 ---

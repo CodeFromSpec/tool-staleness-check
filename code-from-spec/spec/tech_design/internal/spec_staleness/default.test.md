@@ -1,6 +1,6 @@
 ---
-version: 7
-parent_version: 10
+version: 8
+parent_version: 11
 implements:
   - internal/specstaleness/specstaleness_test.go
 ---

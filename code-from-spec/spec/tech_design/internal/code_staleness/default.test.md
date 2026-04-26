@@ -1,6 +1,6 @@
 ---
-version: 7
-parent_version: 9
+version: 8
+parent_version: 10
 implements:
   - internal/codestaleness/codestaleness_test.go
 ---
