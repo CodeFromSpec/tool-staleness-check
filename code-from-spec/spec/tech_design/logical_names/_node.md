@@ -82,12 +82,17 @@ known pattern.
 
 ### LogicalNamesMatch
 
-Compares two logical names for equivalence.
-`TEST/x` and `TEST/x(default)` are considered equal —
-either form matches the other. `ROOT/x` and `ROOT/x(y)`
-are considered equal — qualifiers are stripped before
-comparison. All other comparisons are exact string
-equality.
+Compares two logical names for equivalence. Two
+special rules apply:
+
+- `TEST/x` and `TEST/x(default)` are equivalent —
+  the bare form is an alias for the `(default)` form.
+  Named test nodes like `TEST/x(edge_cases)` are not
+  affected — they only match themselves.
+- `ROOT/x(qualifier)` and `ROOT/x` are equivalent —
+  subsection qualifiers on ROOT names are ignored.
+
+All other comparisons are exact string equality.
 
 ### HasParent
 
