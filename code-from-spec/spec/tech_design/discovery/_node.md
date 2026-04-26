@@ -1,13 +1,11 @@
 ---
-version: 7
+version: 10
 parent_version: 11
 depends_on:
   - path: ROOT/domain/specifications
-    version: 2
-  - path: ROOT/domain/external_dependencies
     version: 4
   - path: ROOT/tech_design/logical_names
-    version: 4
+    version: 6
 implements:
   - cmd/staleness-check/discovery.go
 ---
@@ -16,24 +14,21 @@ implements:
 
 ## Intent
 
-Walks the filesystem to discover all spec nodes, test
-nodes, and external dependencies.
+Walks the filesystem to discover all spec nodes and test
+nodes.
 
 ## Contracts
 
 ### Discovery rules
 
-Walk `code-from-spec/spec/` recursively:
+Walk `code-from-spec/` recursively:
 - Every `_node.md` file produces a spec node.
 - Every `*.test.md` file produces a test node.
 
-Walk `code-from-spec/external/` one level deep:
-- Every `_external.md` file produces an external
-  dependency.
-
 For each discovered file, use `LogicalNameFromPath` from
 `ROOT/tech_design/logical_names` to derive the logical
-name.
+name. Paths passed to `LogicalNameFromPath` are relative
+to the project root.
 
 ### Interface
 
@@ -44,15 +39,15 @@ type DiscoveredNode struct {
 }
 
 func DiscoverNodes() (
-    specNodes    []DiscoveredNode,
-    testNodes    []DiscoveredNode,
-    externalDeps []DiscoveredNode,
-    err          error,
+    specNodes []DiscoveredNode,
+    testNodes []DiscoveredNode,
+    err       error,
 )
 ```
 
-All three lists are sorted alphabetically by
-`LogicalName`.
+All lists are sorted alphabetically by `LogicalName`.
+`FilePath` values are relative to the project root
+(e.g., `code-from-spec/domain/config/_node.md`).
 
 ### Error handling
 
@@ -60,9 +55,8 @@ Errors returned by `DiscoverNodes` must wrap the
 underlying error with a descriptive message so the
 caller can print it directly. Examples:
 
-- `code-from-spec/spec/ directory not found: <underlying error>`
-- `error walking code-from-spec/spec/ directory: <underlying error>`
+- `code-from-spec/ directory not found: <underlying error>`
+- `error walking code-from-spec/ directory: <underlying error>`
 
-Directories under `code-from-spec/external/` that do not contain an
-`_external.md` file are silently skipped — they are not
-an error.
+If `code-from-spec/` does not exist or contains no
+`_node.md` files, return an error.
