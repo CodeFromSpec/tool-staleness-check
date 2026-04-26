@@ -1,4 +1,4 @@
-// code-from-spec: ROOT/tech_design/internal/discovery@v13
+// code-from-spec: ROOT/tech_design/internal/discovery@v14
 package discovery
 
 import (
@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gsneto/tool-staleness-check/internal/logicalnames"
+	"github.com/CodeFromSpec/tool-staleness-check/v2/internal/logicalnames"
 )
 
 // DiscoveredNode represents a single discovered spec or test node.

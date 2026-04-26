@@ -1,4 +1,4 @@
-// code-from-spec: TEST/tech_design/internal/frontmatter@v5
+// code-from-spec: TEST/tech_design/internal/frontmatter@v6
 package frontmatter
 
 import (

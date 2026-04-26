@@ -1,5 +1,5 @@
 ---
-version: 11
+version: 12
 parent_version: 2
 depends_on:
   - path: ROOT/domain/specifications
@@ -60,6 +60,9 @@ or the logical name is empty, the comment is malformed.
 ### Interface
 
 ```go
+var ErrNoSpecComment = errors.New("no spec comment found")
+var ErrMalformed = errors.New("malformed spec comment")
+
 type SpecComment struct {
     LogicalName string
     Version     int
@@ -82,8 +85,10 @@ No intermediate state is accumulated.
 
 ### Error handling
 
-Errors must wrap the underlying error with a descriptive
-message:
-- `error reading <path>: <underlying error>`
-- `no spec comment found in <path>`
-- `malformed spec comment in <path>: <detail>`
+- I/O failure: return `fmt.Errorf("error reading <path>: %w", err)`
+- No spec comment found: return `fmt.Errorf("no spec comment found in <path>: %w", ErrNoSpecComment)`
+- Malformed comment: return `fmt.Errorf("malformed spec comment in <path>: <detail>: %w", ErrMalformed)`
+
+Callers use `errors.Is(err, speccomment.ErrNoSpecComment)` and
+`errors.Is(err, speccomment.ErrMalformed)` to distinguish error
+kinds without inspecting message strings.

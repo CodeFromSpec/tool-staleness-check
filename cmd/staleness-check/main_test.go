@@ -1,4 +1,4 @@
-// code-from-spec: TEST/tech_design/main@v6
+// code-from-spec: TEST/tech_design/main@v9
 package main
 
 import (

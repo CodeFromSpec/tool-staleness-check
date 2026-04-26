@@ -1,4 +1,4 @@
-// code-from-spec: TEST/tech_design/internal/discovery@v8
+// code-from-spec: TEST/tech_design/internal/discovery@v9
 package discovery
 
 import (

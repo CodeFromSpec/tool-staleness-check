@@ -1,4 +1,4 @@
-// code-from-spec: TEST/tech_design/internal/code_staleness@v7
+// code-from-spec: TEST/tech_design/internal/code_staleness@v12
 package codestaleness
 
 import (
@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gsneto/staleness-check/internal/frontmatter"
-	"github.com/gsneto/staleness-check/internal/discovery"
+	"github.com/CodeFromSpec/tool-staleness-check/v2/internal/discovery"
+	"github.com/CodeFromSpec/tool-staleness-check/v2/internal/frontmatter"
 )
 
 // intPtr is a helper to create *int values for Frontmatter.Version.

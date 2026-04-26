@@ -1,6 +1,13 @@
 ---
-version: 8
-parent_version: 10
+version: 12
+parent_version: 12
+depends_on:
+  - path: ROOT/tech_design/internal/discovery
+    version: 14
+  - path: ROOT/tech_design/internal/frontmatter
+    version: 11
+  - path: ROOT/tech_design/internal/spec_comment
+    version: 12
 implements:
   - internal/codestaleness/codestaleness_test.go
 ---
@@ -9,14 +16,14 @@ implements:
 
 ## Context
 
-Tests build a `cache` (`map[string]*Frontmatter`) with
+Tests build a `cache` (`map[string]*frontmatter.Frontmatter`) with
 controlled entries. Generated files are created in
 `t.TempDir()` with controlled content. `ParseSpecComment`
 is called on real files — no mocking. `Version` in
-`Frontmatter` is `*int` — use helper to create pointer
+`frontmatter.Frontmatter` is `*int` — use helper to create pointer
 values.
 
-Cache keys and `DiscoveredNode.FilePath` values are
+Cache keys and `discovery.DiscoveredNode.FilePath` values are
 project-root-relative paths (e.g.,
 `code-from-spec/domain/config/_node.md`).
 

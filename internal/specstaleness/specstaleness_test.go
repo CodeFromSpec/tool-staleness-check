@@ -1,11 +1,11 @@
-// code-from-spec: TEST/tech_design/internal/spec_staleness@v7
+// code-from-spec: TEST/tech_design/internal/spec_staleness@v8
 package specstaleness
 
 import (
 	"testing"
 
-	"github.com/gsneto/staleness-check/internal/discovery"
-	"github.com/gsneto/staleness-check/internal/frontmatter"
+	"github.com/CodeFromSpec/tool-staleness-check/v2/internal/discovery"
+	"github.com/CodeFromSpec/tool-staleness-check/v2/internal/frontmatter"
 )
 
 // intPtr is a helper to create *int values for Frontmatter fields.
@@ -644,7 +644,7 @@ func TestDependencyChanged(t *testing.T) {
 
 func TestDependencyWithSubsectionQualifier(t *testing.T) {
 	// Dependency path has a subsection qualifier "(interface)" that
-	// should be stripped during resolution. Version matches.
+	// should be stripped during resolution. Version matches — no staleness.
 	cache := map[string]*frontmatter.Frontmatter{
 		"code-from-spec/domain/config/_node.md": {
 			Version:       intPtr(2),

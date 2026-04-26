@@ -1,5 +1,5 @@
 ---
-version: 10
+version: 12
 parent_version: 2
 depends_on:
   - path: ROOT/domain/output
@@ -8,6 +8,10 @@ depends_on:
     version: 7
   - path: ROOT/tech_design/internal/logical_names
     version: 9
+  - path: ROOT/tech_design/internal/spec_comment
+    version: 12
+  - path: ROOT/tech_design/internal/spec_staleness
+    version: 11
 implements:
   - internal/codestaleness/codestaleness.go
 ---
@@ -32,13 +36,13 @@ collects the results.
 func CheckCodeStaleness(
     node DiscoveredNode,
     cache map[string]*Frontmatter,
-) []StalenessResult
+) []specstaleness.StalenessResult
 ```
 
 `CheckCodeStaleness` checks one node for code staleness.
 Returns an empty slice if all files are up to date or
 the node has no `implements`. Returns one
-`StalenessResult` per problem found.
+`specstaleness.StalenessResult` per problem found.
 
 The `cache` maps file paths to parsed frontmatters,
 populated by the caller before invoking this function.
@@ -59,13 +63,15 @@ result per problematic file.
    `[no_version]`.
 3. If `Implements` is empty → return empty slice.
 4. For each file in `Implements`, produce at most one
-   `StalenessResult` with `Node` = the node's logical
+   `specstaleness.StalenessResult` with `Node` = the node's logical
    name, `File` = the file path, and `Status` set by
    the first matching condition:
    - File does not exist → `missing`.
-   - `ParseSpecComment` returns no spec comment →
+   - `speccomment.ParseSpecComment` returns an error where
+     `errors.Is(err, speccomment.ErrNoSpecComment)` →
      `no_spec_comment`.
-   - `ParseSpecComment` returns malformed comment →
+   - `speccomment.ParseSpecComment` returns an error where
+     `errors.Is(err, speccomment.ErrMalformed)` →
      `malformed_spec_comment`.
    - `LogicalNamesMatch` between the spec comment's
      logical name and the node's `LogicalName` returns

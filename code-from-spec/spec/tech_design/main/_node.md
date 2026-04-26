@@ -1,11 +1,11 @@
 ---
-version: 15
+version: 17
 parent_version: 12
 depends_on:
   - path: ROOT/domain/output
     version: 7
   - path: ROOT/tech_design/internal/code_staleness
-    version: 10
+    version: 12
   - path: ROOT/tech_design/internal/discovery
     version: 14
   - path: ROOT/tech_design/internal/frontmatter

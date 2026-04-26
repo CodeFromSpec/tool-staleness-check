@@ -1,4 +1,4 @@
-// code-from-spec: ROOT/tech_design/internal/frontmatter@v10
+// code-from-spec: ROOT/tech_design/internal/frontmatter@v11
 package frontmatter
 
 import (
