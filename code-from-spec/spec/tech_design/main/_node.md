@@ -1,17 +1,17 @@
 ---
-version: 11
+version: 14
 parent_version: 11
 depends_on:
   - path: ROOT/domain/output
     version: 7
-  - path: ROOT/tech_design/discovery
+  - path: ROOT/tech_design/internal/code_staleness
     version: 9
-  - path: ROOT/tech_design/frontmatter
-    version: 8
-  - path: ROOT/tech_design/spec_staleness
-    version: 7
-  - path: ROOT/tech_design/code_staleness
-    version: 6
+  - path: ROOT/tech_design/internal/discovery
+    version: 13
+  - path: ROOT/tech_design/internal/frontmatter
+    version: 10
+  - path: ROOT/tech_design/internal/spec_staleness
+    version: 10
 implements:
   - cmd/staleness-check/main.go
 ---
