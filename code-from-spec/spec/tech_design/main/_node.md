@@ -1,17 +1,17 @@
 ---
-version: 9
+version: 11
 parent_version: 11
 depends_on:
   - path: ROOT/domain/output
-    version: 6
+    version: 7
   - path: ROOT/tech_design/discovery
-    version: 7
+    version: 9
   - path: ROOT/tech_design/frontmatter
-    version: 7
+    version: 8
   - path: ROOT/tech_design/spec_staleness
-    version: 5
+    version: 7
   - path: ROOT/tech_design/code_staleness
-    version: 4
+    version: 6
 implements:
   - cmd/staleness-check/main.go
 ---
@@ -59,8 +59,10 @@ Sections with no problems are empty lists ([]).
 Spec and test staleness statuses:
   invalid_frontmatter  Frontmatter cannot be parsed or is missing required fields.
   wrong_name           Title does not match expected logical name.
-  invalid_parent       Parent file cannot be found or read.
-  parent_changed       Parent version changed.
+  invalid_parent       Parent file cannot be found or read. (spec nodes)
+  parent_changed       Parent version changed. (spec nodes)
+  invalid_subject      Subject file cannot be found or read. (test nodes)
+  subject_changed      Subject version changed. (test nodes)
   invalid_dependency   Dependency is malformed or cannot be found or read.
   dependency_changed   Dependency version changed.
 
@@ -78,10 +80,10 @@ Exit codes: 0 = no problems, 1 = problems found, 2 = operational error.
 
 ### Execution flow
 
-1. Call `DiscoverNodes` to find all spec nodes, test
-   nodes, and external dependencies.
+1. Call `DiscoverNodes` to find all spec nodes and test
+   nodes.
 2. Build the frontmatter cache: call `ParseFrontmatter`
-   for every discovered node (spec, test, and external).
+   for every discovered node (spec and test).
    Store the result in a `map[string]*Frontmatter` keyed
    by file path. On success, store the `*Frontmatter`.
    On failure, store `nil` — do not abort.
