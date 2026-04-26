@@ -57,8 +57,10 @@ Sections with no problems are empty lists (`[]`).
 |---|---|
 | `invalid_frontmatter` | Frontmatter cannot be parsed or is missing required fields. |
 | `wrong_name` | Title does not match expected logical name. |
-| `invalid_parent` | Parent file cannot be found or read. |
-| `parent_changed` | Parent version changed. |
+| `invalid_parent` | Parent file cannot be found or read. (spec nodes) |
+| `parent_changed` | Parent version changed. (spec nodes) |
+| `invalid_subject` | Subject file cannot be found or read. (test nodes) |
+| `subject_changed` | Subject version changed. (test nodes) |
 | `invalid_dependency` | Dependency is malformed or cannot be found or read. |
 | `dependency_changed` | Dependency version changed. |
 
@@ -85,15 +87,21 @@ Sections with no problems are empty lists (`[]`).
 ## Tests
 
 ```bash
-go test ./cmd/staleness-check/...
+go test ./...
 ```
 
 ## Project structure
 
 ```
-cmd/staleness-check/     Go source code
+cmd/staleness-check/     Entry point (main.go)
+internal/                Internal packages (codestaleness, discovery, frontmatter,
+                         logicalnames, speccomment, specstaleness)
 code-from-spec/spec/     Specification tree (source of truth)
 code-from-spec/framework/ Code from Spec framework docs
 ```
 
-The specification tree under `code-from-spec/spec/` is the authoritative source for every behavior of this tool. Each Go file references the spec node it implements via a `// spec:` comment.
+The specification tree under `code-from-spec/spec/` is the authoritative source for every behavior of this tool. Each Go file references the spec node it implements via a spec comment on its first line.
+
+## Versioning
+
+The major version of this tool tracks the version of the [Code from Spec](code-from-spec/CODE_FROM_SPEC.md) methodology it supports — not semver compatibility. `v2.x.y` supports Code from Spec v2; a future `v3.x.y` would support Code from Spec v3.
