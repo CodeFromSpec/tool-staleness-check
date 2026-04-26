@@ -1,6 +1,6 @@
 ---
-version: 1
-parent_version: 10
+version: 5
+parent_version: 14
 ---
 
 # ROOT/tech_design/go_module
@@ -9,11 +9,6 @@ parent_version: 10
 
 Documents the Go module configuration (`go.mod`) and how
 it is managed.
-
-## Contracts
-
-The module path is:
-`github.com/CodeFromSpec/tool-staleness-check`
 
 ## Constraints
 
@@ -30,7 +25,7 @@ For a new project, the module must be initialized before
 any code generation:
 
 ```
-go mod init github.com/CodeFromSpec/tool-staleness-check
+go mod init github.com/CodeFromSpec/tool-staleness-check/v2
 ```
 
 This is a one-time setup step. After initialization,

@@ -1,5 +1,5 @@
 ---
-version: 10
+version: 14
 parent_version: 9
 ---
 
@@ -22,26 +22,16 @@ correctness, and fast execution.
 
 Go (minimum 1.22).
 
+### Go module
+
+The module path is:
+`github.com/CodeFromSpec/tool-staleness-check/v2`
+
 ### Dependencies
 
-- Standard library only, plus `gopkg.in/yaml.v3` for YAML
+- Standard library only, plus `github.com/goccy/go-yaml` for YAML
   parsing and output.
 - No test framework beyond the standard `testing` package.
-
-### File organization
-
-All source files live in `cmd/staleness-check/` under
-`package main`:
-
-```
-cmd/staleness-check/
-  main.go          ← orchestration, output, exit codes
-  discovery.go     ← filesystem walk, node enumeration
-  frontmatter.go   ← YAML frontmatter parsing
-  speccomment.go   ← spec comment extraction
-  logicalnames.go  ← logical name ↔ file path conversion
-  staleness.go     ← staleness verification logic
-```
 
 ### Error handling
 
@@ -74,3 +64,11 @@ cmd/staleness-check/
   for any realistic spec tree.
 - No configuration files. Behavior is fully determined by
   the spec tree on disk.
+
+## Test Conventions
+
+- All test helper functions and types must be prefixed with `test`
+  (e.g., `testMakeFM`, `testIntPtr`, `testCase`). This prevents name
+  collisions with unexported functions and types in the package under
+  test when using internal test files (same package as the
+  implementation).

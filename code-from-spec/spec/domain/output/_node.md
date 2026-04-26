@@ -1,5 +1,5 @@
 ---
-version: 6
+version: 7
 parent_version: 10
 ---
 
@@ -29,14 +29,16 @@ has no problems, it is an empty list `[]`.
 
 ### Spec and test staleness statuses
 
-| Status | Condition |
-|---|---|
-| `invalid_frontmatter` | Frontmatter cannot be parsed or is missing required fields. |
-| `wrong_name` | Title does not match expected logical name. |
-| `invalid_parent` | Parent file cannot be found or read. |
-| `parent_changed` | `node.parent_version != parent.version`. |
-| `invalid_dependency` | `depends_on` entry is malformed or referenced file cannot be found or read. |
-| `dependency_changed` | `depends_on[].version != dependency.version`. |
+| Status | Applies to | Condition |
+|---|---|---|
+| `invalid_frontmatter` | Both | Frontmatter cannot be parsed or is missing required fields. |
+| `wrong_name` | Both | Title does not match expected logical name. |
+| `invalid_parent` | Spec nodes | Parent file cannot be found or read. |
+| `parent_changed` | Spec nodes | `node.parent_version != parent.version`. |
+| `invalid_subject` | Test nodes | Subject file cannot be found or read. |
+| `subject_changed` | Test nodes | `node.subject_version != subject.version`. |
+| `invalid_dependency` | Both | `depends_on` entry is malformed or referenced file cannot be found or read. |
+| `dependency_changed` | Both | `depends_on[].version != dependency.version`. |
 
 ### Code staleness statuses
 
@@ -73,8 +75,8 @@ test_staleness: []
 code_staleness: []
 ```
 
-Mixed staleness — multiple problems on a single node,
-generated file stale:
+Mixed staleness — spec node with multiple problems,
+test node with subject changed, generated file stale:
 
 ```yaml
 spec_staleness:
@@ -89,7 +91,7 @@ spec_staleness:
 test_staleness:
   - node: TEST/domain/config
     statuses:
-      - parent_changed
+      - subject_changed
 code_staleness:
   - node: ROOT/domain/config
     file: internal/config/config.go
@@ -128,7 +130,7 @@ spec_staleness: []
 test_staleness:
   - node: TEST/domain/config(edge_cases)
     statuses:
-      - parent_changed
+      - subject_changed
 code_staleness:
   - node: TEST/domain/config(edge_cases)
     file: internal/config/config_edge_test.go

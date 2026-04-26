@@ -28,3 +28,6 @@ CLAUDE.local.md
 
 .sql-migration-repo
 coverage.html
+THIRD_PARTY_LICENSES
+
+/tools/

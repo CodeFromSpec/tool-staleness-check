@@ -1,17 +1,17 @@
 ---
-version: 6
-parent_version: 10
+version: 19
+parent_version: 14
 depends_on:
   - path: ROOT/domain/output
-    version: 6
-  - path: ROOT/tech_design/discovery
-    version: 5
-  - path: ROOT/tech_design/frontmatter
-    version: 6
-  - path: ROOT/tech_design/spec_staleness
-    version: 4
-  - path: ROOT/tech_design/code_staleness
-    version: 2
+    version: 7
+  - path: ROOT/tech_design/internal/code_staleness
+    version: 15
+  - path: ROOT/tech_design/internal/discovery
+    version: 16
+  - path: ROOT/tech_design/internal/frontmatter
+    version: 12
+  - path: ROOT/tech_design/internal/spec_staleness
+    version: 13
 implements:
   - cmd/staleness-check/main.go
 ---
@@ -59,8 +59,10 @@ Sections with no problems are empty lists ([]).
 Spec and test staleness statuses:
   invalid_frontmatter  Frontmatter cannot be parsed or is missing required fields.
   wrong_name           Title does not match expected logical name.
-  invalid_parent       Parent file cannot be found or read.
-  parent_changed       Parent version changed.
+  invalid_parent       Parent file cannot be found or read. (spec nodes)
+  parent_changed       Parent version changed. (spec nodes)
+  invalid_subject      Subject file cannot be found or read. (test nodes)
+  subject_changed      Subject version changed. (test nodes)
   invalid_dependency   Dependency is malformed or cannot be found or read.
   dependency_changed   Dependency version changed.
 
@@ -78,10 +80,10 @@ Exit codes: 0 = no problems, 1 = problems found, 2 = operational error.
 
 ### Execution flow
 
-1. Call `DiscoverNodes` to find all spec nodes, test
-   nodes, and external dependencies.
+1. Call `DiscoverNodes` to find all spec nodes and test
+   nodes.
 2. Build the frontmatter cache: call `ParseFrontmatter`
-   for every discovered node (spec, test, and external).
+   for every discovered node (spec and test).
    Store the result in a `map[string]*Frontmatter` keyed
    by file path. On success, store the `*Frontmatter`.
    On failure, store `nil` — do not abort.
@@ -118,6 +120,6 @@ surfaced as statuses during verification.
 
 ### YAML serialization
 
-Use `gopkg.in/yaml.v3` for output. The output struct
+Use `github.com/goccy/go-yaml` for output. The output struct
 must produce the exact field names and format prescribed
 by `ROOT/domain/output`.

@@ -1,5 +1,5 @@
 ---
-version: 2
+version: 3
 parent_version: 10
 ---
 
@@ -37,7 +37,6 @@ Examples:
 - `# ROOT`
 - `# ROOT/domain/staleness`
 - `# TEST/architecture/backend/config`
-- `# EXTERNAL/database`
 
 ### Verification rule
 
@@ -47,6 +46,4 @@ match, the node fails name verification.
 
 This check applies to all discovered nodes (spec nodes
 and test nodes) and is performed as part of spec
-staleness verification. It also applies to external
-dependency files when they are read during dependency
-resolution.
+staleness verification.
