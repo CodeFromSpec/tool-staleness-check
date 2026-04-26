@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.0.0](https://github.com/CodeFromSpec/tool-staleness-check/compare/v1.0.2...v2.0.0) (2026-04-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* supports code from spec v2 ([#11](https://github.com/CodeFromSpec/tool-staleness-check/issues/11))
+
+### Features
+
+* agents.md, removed unnecessary specs ([#10](https://github.com/CodeFromSpec/tool-staleness-check/issues/10)) ([45b15c3](https://github.com/CodeFromSpec/tool-staleness-check/commit/45b15c37871205a8870c94168c867a7033b13db1))
+* supports code from spec v2 ([#11](https://github.com/CodeFromSpec/tool-staleness-check/issues/11)) ([4f19785](https://github.com/CodeFromSpec/tool-staleness-check/commit/4f197850935cfb3e3cebcb6ca99711435d518318))
+
+
+### Bug Fixes
+
+* workflows for build & test ([#8](https://github.com/CodeFromSpec/tool-staleness-check/issues/8)) ([d72c202](https://github.com/CodeFromSpec/tool-staleness-check/commit/d72c202e553b76771defcb0a1031db985fc7204d))
+
 ## [1.0.2](https://github.com/CodeFromSpec/tool-staleness-check/compare/v1.0.1...v1.0.2) (2026-04-19)
 
 
