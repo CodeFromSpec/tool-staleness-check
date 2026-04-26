@@ -1,5 +1,5 @@
-// code-from-spec: ROOT/tech_design/internal/spec_comment@v12
-// spec: ROOT/tech_design/internal/spec_comment@v12
+// code-from-spec: ROOT/tech_design/internal/spec_comment@v13
+// spec: ROOT/tech_design/internal/spec_comment@v13
 //
 // Package speccomment extracts the spec reference comment from generated
 // source files for code staleness verification.

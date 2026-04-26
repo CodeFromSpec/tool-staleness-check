@@ -1,4 +1,4 @@
-// code-from-spec: TEST/tech_design/internal/discovery@v9
+// code-from-spec: TEST/tech_design/internal/discovery@v10
 package discovery
 
 import (
@@ -7,9 +7,10 @@ import (
 	"testing"
 )
 
-// helper: createFile creates a file (and its parent directories) inside baseDir.
+// testCreateFile creates a file (and its parent directories) inside baseDir.
 // The filePath is slash-separated and relative to baseDir.
-func createFile(t *testing.T, baseDir, filePath string) {
+// Prefixed with "test" per convention to avoid collisions with package symbols.
+func testCreateFile(t *testing.T, baseDir, filePath string) {
 	t.Helper()
 	full := filepath.Join(baseDir, filepath.FromSlash(filePath))
 	if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
@@ -20,9 +21,10 @@ func createFile(t *testing.T, baseDir, filePath string) {
 	}
 }
 
-// helper: chdirTo changes the working directory to dir and returns a cleanup
+// testChdirTo changes the working directory to dir and registers a cleanup
 // function that restores the original working directory.
-func chdirTo(t *testing.T, dir string) {
+// Prefixed with "test" per convention to avoid collisions with package symbols.
+func testChdirTo(t *testing.T, dir string) {
 	t.Helper()
 	orig, err := os.Getwd()
 	if err != nil {
@@ -44,12 +46,12 @@ func chdirTo(t *testing.T, dir string) {
 func TestDiscoverNodes_SpecNodesAtAllLevels(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Create spec nodes at three levels.
-	createFile(t, tmpDir, "code-from-spec/_node.md")
-	createFile(t, tmpDir, "code-from-spec/domain/_node.md")
-	createFile(t, tmpDir, "code-from-spec/domain/config/_node.md")
+	// Create spec nodes at three levels of the tree.
+	testCreateFile(t, tmpDir, "code-from-spec/_node.md")
+	testCreateFile(t, tmpDir, "code-from-spec/domain/_node.md")
+	testCreateFile(t, tmpDir, "code-from-spec/domain/config/_node.md")
 
-	chdirTo(t, tmpDir)
+	testChdirTo(t, tmpDir)
 
 	specNodes, testNodes, err := DiscoverNodes()
 	if err != nil {
@@ -61,7 +63,7 @@ func TestDiscoverNodes_SpecNodesAtAllLevels(t *testing.T) {
 		t.Fatalf("expected 3 spec nodes, got %d", len(specNodes))
 	}
 
-	// Verify each spec node's logical name and file path.
+	// Verify each spec node's logical name and file path (in sorted order).
 	expectedSpec := []DiscoveredNode{
 		{LogicalName: "ROOT", FilePath: "code-from-spec/_node.md"},
 		{LogicalName: "ROOT/domain", FilePath: "code-from-spec/domain/_node.md"},
@@ -75,30 +77,31 @@ func TestDiscoverNodes_SpecNodesAtAllLevels(t *testing.T) {
 		}
 	}
 
-	// No test nodes expected.
+	// No test nodes expected when no *.test.md files exist.
 	if len(testNodes) != 0 {
 		t.Errorf("expected 0 test nodes, got %d", len(testNodes))
 	}
 }
 
 // TestDiscoverNodes_TestNodes verifies that *.test.md files are discovered
-// as test nodes with correct logical names (including named variants).
+// as test nodes with correct logical names (including named variants like
+// edge_cases.test.md → TEST/domain/config(edge_cases)).
 func TestDiscoverNodes_TestNodes(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create a spec node and two test nodes in the same directory.
-	createFile(t, tmpDir, "code-from-spec/domain/config/_node.md")
-	createFile(t, tmpDir, "code-from-spec/domain/config/default.test.md")
-	createFile(t, tmpDir, "code-from-spec/domain/config/edge_cases.test.md")
+	testCreateFile(t, tmpDir, "code-from-spec/domain/config/_node.md")
+	testCreateFile(t, tmpDir, "code-from-spec/domain/config/default.test.md")
+	testCreateFile(t, tmpDir, "code-from-spec/domain/config/edge_cases.test.md")
 
-	chdirTo(t, tmpDir)
+	testChdirTo(t, tmpDir)
 
 	_, testNodes, err := DiscoverNodes()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Expect exactly 2 test nodes, sorted by LogicalName.
+	// Expect exactly 2 test nodes, sorted alphabetically by LogicalName.
 	if len(testNodes) != 2 {
 		t.Fatalf("expected 2 test nodes, got %d", len(testNodes))
 	}
@@ -118,22 +121,23 @@ func TestDiscoverNodes_TestNodes(t *testing.T) {
 
 // TestDiscoverNodes_TestNodesAlongsideIntermediateNodes verifies that test
 // nodes placed alongside intermediate (non-leaf) spec nodes are discovered.
+// An intermediate node has child directories but may still have test nodes.
 func TestDiscoverNodes_TestNodesAlongsideIntermediateNodes(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// domain/ is intermediate (has child config/), but also has a test node.
-	createFile(t, tmpDir, "code-from-spec/domain/_node.md")
-	createFile(t, tmpDir, "code-from-spec/domain/default.test.md")
-	createFile(t, tmpDir, "code-from-spec/domain/config/_node.md")
+	testCreateFile(t, tmpDir, "code-from-spec/domain/_node.md")
+	testCreateFile(t, tmpDir, "code-from-spec/domain/default.test.md")
+	testCreateFile(t, tmpDir, "code-from-spec/domain/config/_node.md")
 
-	chdirTo(t, tmpDir)
+	testChdirTo(t, tmpDir)
 
 	_, testNodes, err := DiscoverNodes()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Verify test node for domain/ is present.
+	// Verify that the test node for domain/ is present in the results.
 	found := false
 	for _, tn := range testNodes {
 		if tn.LogicalName == "TEST/domain" && tn.FilePath == "code-from-spec/domain/default.test.md" {
@@ -147,29 +151,29 @@ func TestDiscoverNodes_TestNodesAlongsideIntermediateNodes(t *testing.T) {
 }
 
 // TestDiscoverNodes_SortedAlphabetically verifies that both specNodes and
-// testNodes are sorted alphabetically by LogicalName, regardless of
-// filesystem walk order.
+// testNodes are sorted alphabetically by LogicalName, regardless of the
+// filesystem walk order (which may differ from alphabetical order).
 func TestDiscoverNodes_SortedAlphabetically(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Create nodes in an order where filesystem walk order might differ
-	// from alphabetical order of logical names. Directories starting with
-	// 'z' come after 'a' alphabetically but we create them first.
-	createFile(t, tmpDir, "code-from-spec/_node.md")
-	createFile(t, tmpDir, "code-from-spec/zebra/_node.md")
-	createFile(t, tmpDir, "code-from-spec/alpha/_node.md")
-	createFile(t, tmpDir, "code-from-spec/middle/_node.md")
-	createFile(t, tmpDir, "code-from-spec/zebra/default.test.md")
-	createFile(t, tmpDir, "code-from-spec/alpha/default.test.md")
+	// Create nodes whose directories are not in alphabetical order to
+	// exercise sorting. Filesystem walk order is not guaranteed to be
+	// alphabetical on all platforms.
+	testCreateFile(t, tmpDir, "code-from-spec/_node.md")
+	testCreateFile(t, tmpDir, "code-from-spec/zebra/_node.md")
+	testCreateFile(t, tmpDir, "code-from-spec/alpha/_node.md")
+	testCreateFile(t, tmpDir, "code-from-spec/middle/_node.md")
+	testCreateFile(t, tmpDir, "code-from-spec/zebra/default.test.md")
+	testCreateFile(t, tmpDir, "code-from-spec/alpha/default.test.md")
 
-	chdirTo(t, tmpDir)
+	testChdirTo(t, tmpDir)
 
 	specNodes, testNodes, err := DiscoverNodes()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Verify spec nodes are sorted by LogicalName.
+	// Verify spec nodes are sorted ascending by LogicalName.
 	for i := 1; i < len(specNodes); i++ {
 		if specNodes[i].LogicalName < specNodes[i-1].LogicalName {
 			t.Errorf("specNodes not sorted: %q comes after %q",
@@ -177,7 +181,7 @@ func TestDiscoverNodes_SortedAlphabetically(t *testing.T) {
 		}
 	}
 
-	// Verify test nodes are sorted by LogicalName.
+	// Verify test nodes are sorted ascending by LogicalName.
 	for i := 1; i < len(testNodes); i++ {
 		if testNodes[i].LogicalName < testNodes[i-1].LogicalName {
 			t.Errorf("testNodes not sorted: %q comes after %q",
@@ -185,7 +189,7 @@ func TestDiscoverNodes_SortedAlphabetically(t *testing.T) {
 		}
 	}
 
-	// Sanity check: alpha < middle < zebra in spec nodes (after ROOT).
+	// Sanity check: ROOT < ROOT/alpha < ROOT/middle < ROOT/zebra.
 	if len(specNodes) != 4 {
 		t.Fatalf("expected 4 spec nodes, got %d", len(specNodes))
 	}
@@ -196,7 +200,7 @@ func TestDiscoverNodes_SortedAlphabetically(t *testing.T) {
 		}
 	}
 
-	// Test nodes: TEST/alpha before TEST/zebra.
+	// Test nodes: TEST/alpha must come before TEST/zebra.
 	if len(testNodes) != 2 {
 		t.Fatalf("expected 2 test nodes, got %d", len(testNodes))
 	}
@@ -210,15 +214,16 @@ func TestDiscoverNodes_SortedAlphabetically(t *testing.T) {
 
 // TestDiscoverNodes_EmptyCodeFromSpecDirectory verifies that an error is
 // returned when code-from-spec/ exists but contains no _node.md files.
+// An empty directory is not a valid spec tree.
 func TestDiscoverNodes_EmptyCodeFromSpecDirectory(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Create the directory but no _node.md files inside it.
+	// Create the directory but place no _node.md files inside it.
 	if err := os.MkdirAll(filepath.Join(tmpDir, "code-from-spec"), 0o755); err != nil {
 		t.Fatalf("failed to create code-from-spec/: %v", err)
 	}
 
-	chdirTo(t, tmpDir)
+	testChdirTo(t, tmpDir)
 
 	_, _, err := DiscoverNodes()
 	if err == nil {
@@ -227,28 +232,29 @@ func TestDiscoverNodes_EmptyCodeFromSpecDirectory(t *testing.T) {
 }
 
 // TestDiscoverNodes_NonNodeFilesIgnored verifies that files that are neither
-// _node.md nor *.test.md are not included in any result list.
+// _node.md nor *.test.md (e.g., README.md, notes.txt) are silently ignored
+// and do not appear in any result list.
 func TestDiscoverNodes_NonNodeFilesIgnored(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Create one valid spec node plus some non-node files.
-	createFile(t, tmpDir, "code-from-spec/_node.md")
-	createFile(t, tmpDir, "code-from-spec/README.md")
-	createFile(t, tmpDir, "code-from-spec/notes.txt")
-	createFile(t, tmpDir, "code-from-spec/domain/README.md")
+	// Create one valid spec node plus several non-node files that must be ignored.
+	testCreateFile(t, tmpDir, "code-from-spec/_node.md")
+	testCreateFile(t, tmpDir, "code-from-spec/README.md")
+	testCreateFile(t, tmpDir, "code-from-spec/notes.txt")
+	testCreateFile(t, tmpDir, "code-from-spec/domain/README.md")
 
-	chdirTo(t, tmpDir)
+	testChdirTo(t, tmpDir)
 
 	specNodes, testNodes, err := DiscoverNodes()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Only the _node.md should appear; README.md and notes.txt must be absent.
+	// Only the _node.md should appear; all other files must be absent.
 	if len(specNodes) != 1 {
 		t.Errorf("expected 1 spec node, got %d: %v", len(specNodes), specNodes)
 	}
-	if specNodes[0].LogicalName != "ROOT" {
+	if len(specNodes) == 1 && specNodes[0].LogicalName != "ROOT" {
 		t.Errorf("expected spec node ROOT, got %q", specNodes[0].LogicalName)
 	}
 
@@ -258,12 +264,12 @@ func TestDiscoverNodes_NonNodeFilesIgnored(t *testing.T) {
 }
 
 // TestDiscoverNodes_DirectoryDoesNotExist verifies that an error is returned
-// when code-from-spec/ does not exist at all.
+// when code-from-spec/ does not exist at all in the working directory.
 func TestDiscoverNodes_DirectoryDoesNotExist(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Do not create code-from-spec/ at all.
-	chdirTo(t, tmpDir)
+	// Do not create code-from-spec/ — the directory is entirely absent.
+	testChdirTo(t, tmpDir)
 
 	_, _, err := DiscoverNodes()
 	if err == nil {

@@ -1,4 +1,4 @@
-// code-from-spec: ROOT/tech_design/internal/logical_names@v9
+// code-from-spec: ROOT/tech_design/internal/logical_names@v10
 package logicalnames
 
 import (

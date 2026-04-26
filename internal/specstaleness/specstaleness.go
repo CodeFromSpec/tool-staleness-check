@@ -1,4 +1,4 @@
-// code-from-spec: ROOT/tech_design/internal/spec_staleness@v11
+// code-from-spec: ROOT/tech_design/internal/spec_staleness@v13
 package specstaleness
 
 // Package specstaleness verifies spec staleness for a single node.

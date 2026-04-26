@@ -1,4 +1,4 @@
-// code-from-spec: TEST/tech_design/internal/code_staleness@v12
+// code-from-spec: TEST/tech_design/internal/code_staleness@v13
 package codestaleness
 
 import (
@@ -10,14 +10,16 @@ import (
 	"github.com/CodeFromSpec/tool-staleness-check/v2/internal/frontmatter"
 )
 
-// intPtr is a helper to create *int values for Frontmatter.Version.
-func intPtr(v int) *int {
+// testIntPtr is a helper to create *int values for Frontmatter.Version.
+// Prefixed with "test" per test convention (ROOT/tech_design).
+func testIntPtr(v int) *int {
 	return &v
 }
 
-// writeFile creates a file in the given directory with the specified content.
+// testWriteFile creates a file in the given directory with the specified content.
 // It uses t.Fatal on error so tests don't proceed with missing fixtures.
-func writeFile(t *testing.T, dir, name, content string) string {
+// Prefixed with "test" per test convention (ROOT/tech_design).
+func testWriteFile(t *testing.T, dir, name, content string) string {
 	t.Helper()
 	path := filepath.Join(dir, name)
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
@@ -34,12 +36,12 @@ func TestAllFilesUpToDate(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create the implemented file with correct spec comment and version.
-	configPath := writeFile(t, tmpDir, "config.go",
+	configPath := testWriteFile(t, tmpDir, "config.go",
 		"// code-from-spec: ROOT/domain/config@v2\npackage config\n")
 
 	cache := map[string]*frontmatter.Frontmatter{
 		"code-from-spec/domain/config/_node.md": {
-			Version:    intPtr(2),
+			Version:    testIntPtr(2),
 			Implements: []string{configPath},
 		},
 	}
@@ -60,14 +62,14 @@ func TestAllFilesUpToDate(t *testing.T) {
 func TestMultipleFilesAllUpToDate(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	configPath := writeFile(t, tmpDir, "config.go",
+	configPath := testWriteFile(t, tmpDir, "config.go",
 		"// code-from-spec: ROOT/domain/config@v3\npackage config\n")
-	utilPath := writeFile(t, tmpDir, "util.go",
+	utilPath := testWriteFile(t, tmpDir, "util.go",
 		"// code-from-spec: ROOT/domain/config@v3\npackage config\n")
 
 	cache := map[string]*frontmatter.Frontmatter{
 		"code-from-spec/domain/config/_node.md": {
-			Version:    intPtr(3),
+			Version:    testIntPtr(3),
 			Implements: []string{configPath, utilPath},
 		},
 	}
@@ -90,12 +92,12 @@ func TestTestNodeCanonicalEquivalence(t *testing.T) {
 
 	// The spec comment uses the (default) form, but the node's logical name
 	// is the bare form. LogicalNamesMatch should treat them as equal.
-	testPath := writeFile(t, tmpDir, "config_test.go",
+	testPath := testWriteFile(t, tmpDir, "config_test.go",
 		"// code-from-spec: TEST/domain/config(default)@v1\npackage config\n")
 
 	cache := map[string]*frontmatter.Frontmatter{
 		"code-from-spec/domain/config/default.test.md": {
-			Version:    intPtr(1),
+			Version:    testIntPtr(1),
 			Implements: []string{testPath},
 		},
 	}
@@ -116,7 +118,7 @@ func TestTestNodeCanonicalEquivalence(t *testing.T) {
 func TestNoImplements(t *testing.T) {
 	cache := map[string]*frontmatter.Frontmatter{
 		"code-from-spec/domain/_node.md": {
-			Version:    intPtr(5),
+			Version:    testIntPtr(5),
 			Implements: nil,
 		},
 	}
@@ -220,7 +222,7 @@ func TestMissingFile(t *testing.T) {
 
 	cache := map[string]*frontmatter.Frontmatter{
 		"code-from-spec/domain/config/_node.md": {
-			Version:    intPtr(2),
+			Version:    testIntPtr(2),
 			Implements: []string{nonexistentPath},
 		},
 	}
@@ -250,12 +252,12 @@ func TestMissingFile(t *testing.T) {
 func TestNoSpecComment(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	configPath := writeFile(t, tmpDir, "config.go",
+	configPath := testWriteFile(t, tmpDir, "config.go",
 		"package config\n\nfunc Init() {}\n")
 
 	cache := map[string]*frontmatter.Frontmatter{
 		"code-from-spec/domain/config/_node.md": {
-			Version:    intPtr(2),
+			Version:    testIntPtr(2),
 			Implements: []string{configPath},
 		},
 	}
@@ -279,12 +281,12 @@ func TestNoSpecComment(t *testing.T) {
 func TestMalformedSpecComment(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	configPath := writeFile(t, tmpDir, "config.go",
+	configPath := testWriteFile(t, tmpDir, "config.go",
 		"// code-from-spec: ROOT/domain/config@vabc\npackage config\n")
 
 	cache := map[string]*frontmatter.Frontmatter{
 		"code-from-spec/domain/config/_node.md": {
-			Version:    intPtr(2),
+			Version:    testIntPtr(2),
 			Implements: []string{configPath},
 		},
 	}
@@ -308,12 +310,12 @@ func TestMalformedSpecComment(t *testing.T) {
 func TestWrongNode(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	configPath := writeFile(t, tmpDir, "config.go",
+	configPath := testWriteFile(t, tmpDir, "config.go",
 		"// code-from-spec: ROOT/domain/other@v2\npackage config\n")
 
 	cache := map[string]*frontmatter.Frontmatter{
 		"code-from-spec/domain/config/_node.md": {
-			Version:    intPtr(2),
+			Version:    testIntPtr(2),
 			Implements: []string{configPath},
 		},
 	}
@@ -338,12 +340,12 @@ func TestStale(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Node is at version 3, but spec comment says v2.
-	configPath := writeFile(t, tmpDir, "config.go",
+	configPath := testWriteFile(t, tmpDir, "config.go",
 		"// code-from-spec: ROOT/domain/config@v2\npackage config\n")
 
 	cache := map[string]*frontmatter.Frontmatter{
 		"code-from-spec/domain/config/_node.md": {
-			Version:    intPtr(3),
+			Version:    testIntPtr(3),
 			Implements: []string{configPath},
 		},
 	}
@@ -371,11 +373,11 @@ func TestMixedResultsAcrossFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// a.go is up to date (v3 matches).
-	aPath := writeFile(t, tmpDir, "a.go",
+	aPath := testWriteFile(t, tmpDir, "a.go",
 		"// code-from-spec: ROOT/domain/config@v3\npackage config\n")
 
 	// b.go is stale (v2 != v3).
-	bPath := writeFile(t, tmpDir, "b.go",
+	bPath := testWriteFile(t, tmpDir, "b.go",
 		"// code-from-spec: ROOT/domain/config@v2\npackage config\n")
 
 	// c.go does not exist — missing.
@@ -383,7 +385,7 @@ func TestMixedResultsAcrossFiles(t *testing.T) {
 
 	cache := map[string]*frontmatter.Frontmatter{
 		"code-from-spec/domain/config/_node.md": {
-			Version:    intPtr(3),
+			Version:    testIntPtr(3),
 			Implements: []string{aPath, bPath, cPath},
 		},
 	}

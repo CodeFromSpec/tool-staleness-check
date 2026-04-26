@@ -1,4 +1,4 @@
-// code-from-spec: ROOT/tech_design/internal/discovery@v14
+// code-from-spec: ROOT/tech_design/internal/discovery@v16
 package discovery
 
 import (

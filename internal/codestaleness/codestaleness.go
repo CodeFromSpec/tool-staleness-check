@@ -1,4 +1,4 @@
-// code-from-spec: ROOT/tech_design/internal/code_staleness@v12
+// code-from-spec: ROOT/tech_design/internal/code_staleness@v15
 
 // Package codestaleness verifies code staleness for a single node.
 // The caller invokes CheckCodeStaleness once per discovered node

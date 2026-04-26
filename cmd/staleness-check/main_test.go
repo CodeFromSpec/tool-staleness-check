@@ -1,5 +1,5 @@
-// code-from-spec: TEST/tech_design/main@v10
-// spec: TEST/tech_design/main@v10
+// code-from-spec: TEST/tech_design/main@v11
+// spec: TEST/tech_design/main@v11
 //
 // Integration tests for the staleness-check binary.
 // The binary is built once in TestMain and reused across all tests.

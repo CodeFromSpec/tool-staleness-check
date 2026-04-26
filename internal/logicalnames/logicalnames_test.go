@@ -1,4 +1,4 @@
-// code-from-spec: TEST/tech_design/internal/logical_names@v8
+// code-from-spec: TEST/tech_design/internal/logical_names@v9
 package logicalnames
 
 import "testing"

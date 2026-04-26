@@ -1,4 +1,4 @@
-// code-from-spec: TEST/tech_design/internal/spec_comment@v7
+// code-from-spec: TEST/tech_design/internal/spec_comment@v8
 package speccomment
 
 import (
