@@ -1,11 +1,11 @@
 ---
-version: 7
+version: 9
 parent_version: 11
 depends_on:
   - path: ROOT/domain/specifications
-    version: 2
+    version: 4
   - path: ROOT/domain/name_verification
-    version: 2
+    version: 3
 implements:
   - cmd/staleness-check/frontmatter.go
 ---
@@ -15,7 +15,7 @@ implements:
 ## Intent
 
 Reads and parses the YAML frontmatter and title from node
-files and external dependency files.
+files.
 
 ## Contracts
 
@@ -28,6 +28,7 @@ after the second `---` is ignored except for the title.
 Fields extracted from frontmatter:
 - `version` (pointer to integer, nil if absent)
 - `parent_version` (pointer to integer, nil if absent)
+- `subject_version` (pointer to integer, nil if absent)
 - `depends_on` (list of objects with `path` string and
   `version` integer)
 - `implements` (list of strings)
@@ -57,11 +58,12 @@ type DependsOn struct {
 }
 
 type Frontmatter struct {
-    Version       *int
-    ParentVersion *int
-    DependsOn     []DependsOn
-    Implements    []string
-    Title         string
+    Version        *int
+    ParentVersion  *int
+    SubjectVersion *int
+    DependsOn      []DependsOn
+    Implements     []string
+    Title          string
 }
 
 func ParseFrontmatter(filePath string) (
