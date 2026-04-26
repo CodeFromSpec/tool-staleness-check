@@ -1,9 +1,9 @@
 ---
-version: 7
+version: 9
 parent_version: 11
 depends_on:
   - path: ROOT/domain/specifications
-    version: 2
+    version: 4
 implements:
   - cmd/staleness-check/speccomment.go
 ---
@@ -22,7 +22,7 @@ files for code staleness verification.
 The spec comment contains the substring:
 
 ```
-spec: <logical-name>@v<version>
+code-from-spec: <logical-name>@v<version>
 ```
 
 The tool does not attempt to identify the comment syntax
@@ -33,16 +33,17 @@ language-agnostic — any comment syntax works.
 ### Detection
 
 Read the file line by line from the top. For each line,
-look for the substring `spec: `. Stop reading as soon as
-a match is found. If the entire file is read without a
-match, report that no spec comment was found.
+look for the substring `code-from-spec: `. Stop reading
+as soon as a match is found. If the entire file is read
+without a match, report that no spec comment was found.
 
 ### Extraction
 
-Once a line containing `spec: ` is found, extract the
-logical name and version:
+Once a line containing `code-from-spec: ` is found,
+extract the logical name and version:
 
-1. Take everything after `spec: ` to the end of the line.
+1. Take everything after `code-from-spec: ` to the end
+   of the line.
 2. Find the last occurrence of `@v` in that substring.
 3. The logical name is everything before `@v`.
 4. The version string is everything after `@v`, up to the
