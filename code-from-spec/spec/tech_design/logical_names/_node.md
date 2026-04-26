@@ -1,10 +1,8 @@
 ---
-version: 4
+version: 7
 parent_version: 11
 depends_on:
   - path: ROOT/domain/specifications
-    version: 2
-  - path: ROOT/domain/external_dependencies
     version: 4
 implements:
   - cmd/staleness-check/logicalnames.go
@@ -37,21 +35,22 @@ the project root.
 
 | File path | Logical name |
 |---|---|
-| `code-from-spec/spec/_node.md` | `ROOT` |
-| `code-from-spec/spec/x/_node.md` | `ROOT/x` |
-| `code-from-spec/spec/x/y/_node.md` | `ROOT/x/y` |
-| `code-from-spec/spec/default.test.md` | `TEST` |
-| `code-from-spec/spec/x/default.test.md` | `TEST/x` |
-| `code-from-spec/spec/x/name.test.md` | `TEST/x(name)` |
-| `code-from-spec/external/x/_external.md` | `EXTERNAL/x` |
+| `code-from-spec/_node.md` | `ROOT` |
+| `code-from-spec/x/_node.md` | `ROOT/x` |
+| `code-from-spec/x/y/_node.md` | `ROOT/x/y` |
+| `code-from-spec/default.test.md` | `TEST` |
+| `code-from-spec/x/default.test.md` | `TEST/x` |
+| `code-from-spec/x/name.test.md` | `TEST/x(name)` |
 
 Rules:
-- `code-from-spec/spec/_node.md` → `ROOT`
-- `code-from-spec/spec/<path>/_node.md` → `ROOT/<path>`
-- `code-from-spec/spec/default.test.md` → `TEST`
-- `code-from-spec/spec/<path>/default.test.md` → `TEST/<path>`
-- `code-from-spec/spec/<path>/<name>.test.md` → `TEST/<path>(<name>)`
-- `code-from-spec/external/<name>/_external.md` → `EXTERNAL/<name>`
+- `code-from-spec/_node.md` → `ROOT`
+- `code-from-spec/<path>/_node.md` → `ROOT/<path>`
+- `code-from-spec/default.test.md` → `TEST`
+- `code-from-spec/<path>/default.test.md` → `TEST/<path>`
+- `code-from-spec/<path>/<name>.test.md` → `TEST/<path>(<name>)`
+
+Returns `("", false)` if the path does not match any
+known pattern.
 
 ### PathFromLogicalName
 
@@ -60,27 +59,35 @@ project root.
 
 | Logical name | File path |
 |---|---|
-| `ROOT` | `code-from-spec/spec/_node.md` |
-| `ROOT/x/y` | `code-from-spec/spec/x/y/_node.md` |
-| `TEST` | `code-from-spec/spec/default.test.md` |
-| `TEST/x` | `code-from-spec/spec/x/default.test.md` |
-| `TEST/x(name)` | `code-from-spec/spec/x/name.test.md` |
-| `EXTERNAL/x` | `code-from-spec/external/x/_external.md` |
+| `ROOT` | `code-from-spec/_node.md` |
+| `ROOT/x/y` | `code-from-spec/x/y/_node.md` |
+| `TEST` | `code-from-spec/default.test.md` |
+| `TEST/x` | `code-from-spec/x/default.test.md` |
+| `TEST/x(name)` | `code-from-spec/x/name.test.md` |
+
+A subsection qualifier (e.g., `ROOT/x/y(z)`) is stripped
+before resolution — `ROOT/x/y(z)` resolves to the same
+file as `ROOT/x/y`.
 
 Rules:
-- `ROOT` → `code-from-spec/spec/_node.md`
-- `ROOT/<path>` → `code-from-spec/spec/<path>/_node.md`
-- `TEST` → `code-from-spec/spec/default.test.md`
-- `TEST/<path>` → `code-from-spec/spec/<path>/default.test.md`
-- `TEST/<path>(<name>)` → `code-from-spec/spec/<path>/<name>.test.md`
-- `EXTERNAL/<name>` → `code-from-spec/external/<name>/_external.md`
+- `ROOT` → `code-from-spec/_node.md`
+- `ROOT/<path>` → `code-from-spec/<path>/_node.md`
+- `ROOT/<path>(qualifier)` → `code-from-spec/<path>/_node.md`
+- `TEST` → `code-from-spec/default.test.md`
+- `TEST/<path>` → `code-from-spec/<path>/default.test.md`
+- `TEST/<path>(<name>)` → `code-from-spec/<path>/<name>.test.md`
+
+Returns `("", false)` if the input does not match any
+known pattern.
 
 ### LogicalNamesMatch
 
 Compares two logical names for equivalence.
 `TEST/x` and `TEST/x(default)` are considered equal —
-either form matches the other. All other comparisons
-are exact string equality.
+either form matches the other. `ROOT/x` and `ROOT/x(y)`
+are considered equal — qualifiers are stripped before
+comparison. All other comparisons are exact string
+equality.
 
 ### HasParent
 
@@ -95,8 +102,6 @@ the input is a valid logical name.
 | `TEST` | `true` | `true` |
 | `TEST/x` | `true` | `true` |
 | `TEST/x(name)` | `true` | `true` |
-| `EXTERNAL/x` | `false` | `true` |
-| `EXTERNAL` | `false` | `false` |
 | `""` | `false` | `false` |
 
 Rules:
@@ -104,17 +109,16 @@ Rules:
 - `ROOT/<path>` → has parent
 - `TEST` and `TEST/<path>` and `TEST/<path>(<name>)` →
   has parent (parent is always in the ROOT namespace)
-- `EXTERNAL/<name>` → no parent
 - Anything else → not a valid logical name
 
 ### ParentLogicalName
 
 Derives the parent's logical name from a node's logical
-name. Returns `(parent, true)` on success, `("", false)`
-if the node has no parent. Only call after confirming
-`HasParent` returns `true`.
+name. For test nodes, returns the subject's logical name.
+Returns `(parent, true)` on success, `("", false)` if
+the node has no parent.
 
-| Logical name | Parent |
+| Logical name | Parent / Subject |
 |---|---|
 | `ROOT/x` | `ROOT` |
 | `ROOT/x/y` | `ROOT/x` |
