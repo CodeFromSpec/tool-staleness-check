@@ -1,4 +1,4 @@
-// code-from-spec: ROOT/tech_design/internal/logical_names@v8
+// code-from-spec: ROOT/tech_design/internal/logical_names@v9
 package logicalnames
 
 import (
@@ -144,7 +144,7 @@ func LogicalNamesMatch(a, b string) bool {
 //   - ROOT/<path>    → (true, true)
 //   - TEST (and all TEST variants) → (true, true)
 //   - anything else  → (false, false)
-func HasParent(logicalName string) (bool, bool) {
+func HasParent(logicalName string) (hasParent, ok bool) {
 	switch {
 	case logicalName == "ROOT":
 		return false, true
