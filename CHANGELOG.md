@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/CodeFromSpec/tool-staleness-check/compare/v2.0.0...v2.0.1) (2026-04-26)
+
+
+### Bug Fixes
+
+* update README for v2 restructure and versioning scheme ([#12](https://github.com/CodeFromSpec/tool-staleness-check/issues/12)) ([f6917e3](https://github.com/CodeFromSpec/tool-staleness-check/commit/f6917e316b41fb50cc7373e47d711fa3147f0560))
+
 ## [2.0.0](https://github.com/CodeFromSpec/tool-staleness-check/compare/v1.0.2...v2.0.0) (2026-04-26)
 
 
