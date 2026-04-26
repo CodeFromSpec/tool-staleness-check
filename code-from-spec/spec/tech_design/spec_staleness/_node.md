@@ -1,15 +1,15 @@
 ---
-version: 5
+version: 7
 parent_version: 11
 depends_on:
   - path: ROOT/domain/staleness
-    version: 6
+    version: 7
   - path: ROOT/domain/name_verification
-    version: 2
+    version: 3
   - path: ROOT/domain/output
-    version: 6
+    version: 7
   - path: ROOT/tech_design/logical_names
-    version: 4
+    version: 6
 implements:
   - cmd/staleness-check/specstaleness.go
 ---
@@ -48,11 +48,15 @@ dependency changed simultaneously).
 The `cache` maps file paths to parsed frontmatters,
 populated by the caller before invoking this function.
 Every discovered node has an entry in the cache: a valid
-`*Frontmatter` on success, or `nil` if frontmatter parsing failed.
-If a file path has no entry in the cache, the file does
-not exist.
+`*Frontmatter` on success, or `nil` if frontmatter
+parsing failed. If a file path has no entry in the
+cache, the file does not exist.
 
-### Algorithm
+Spec nodes (`ROOT/` prefix) and test nodes (`TEST/`
+prefix) follow different algorithms for the
+parent/subject check. All other checks are identical.
+
+### Algorithm — spec nodes
 
 Check in this order. Steps 1-2 are blocking — if they
 fail, return immediately with a single result. From step
@@ -79,16 +83,40 @@ fail, return immediately with a single result. From step
 5. Dependency check (for each `depends_on` entry):
    - Use `PathFromLogicalName` to resolve the
      dependency's file path from its logical name.
-   - Look up the dependency's frontmatter in the cache.
-     If the path cannot be resolved, not found, or nil
-     → collect `invalid_dependency`.
+   - If the path cannot be resolved, or the entry is not
+     found or nil in the cache → collect
+     `invalid_dependency`.
    - Otherwise compare: if `depends_on.version !=
      dependency.version` → collect `dependency_changed`.
 6. Return all collected results (empty slice if none).
 
+### Algorithm — test nodes
+
+Check in this order. Steps 1-2 are blocking — if they
+fail, return immediately with a single result. From step
+3 onward, collect all problems found.
+
+1. Look up the node's frontmatter in the cache. If not
+   found or nil → return `[invalid_frontmatter]`.
+2. Check required fields: `version` and `subject_version`
+   must be present. If missing → return
+   `[invalid_frontmatter]`.
+3. Use `LogicalNamesMatch` to compare the frontmatter
+   `Title` against the node's `LogicalName`. If it does
+   not match or Title is empty → collect `wrong_name`.
+4. Subject check: use `ParentLogicalName` to derive the
+   subject's logical name, then `PathFromLogicalName` to
+   get its file path.
+   - Look up the subject's frontmatter in the cache. If
+     not found or nil → collect `invalid_subject`.
+   - Otherwise compare: if
+     `node.subject_version != subject.version` → collect
+     `subject_changed`.
+5. Dependency check (same as spec nodes, step 5 above).
+6. Return all collected results (empty slice if none).
+
 ### Path resolution
 
-Parent and dependency logical names are resolved to file
-paths using `HasParent`, `ParentLogicalName`, and
+Parent, subject, and dependency logical names are resolved
+to file paths using `HasParent`, `ParentLogicalName`, and
 `PathFromLogicalName` from `ROOT/tech_design/logical_names`.
-
