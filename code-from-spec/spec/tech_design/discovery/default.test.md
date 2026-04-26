@@ -1,6 +1,6 @@
 ---
-version: 3
-parent_version: 7
+version: 5
+parent_version: 9
 implements:
   - cmd/staleness-check/discovery_test.go
 ---
@@ -10,11 +10,12 @@ implements:
 ## Context
 
 Each test uses `t.TempDir()` to create an isolated
-temporary directory. The test creates the required file
-structure inside it, then calls `os.Chdir()` to set it
-as the working directory before invoking `DiscoverNodes`.
-Save and restore the original working directory to avoid
-interference between tests.
+temporary directory representing the project root. The
+test creates the required file structure inside it, then
+calls `os.Chdir()` to set it as the working directory
+before invoking `DiscoverNodes`. Save and restore the
+original working directory to avoid interference between
+tests.
 
 ## Happy Path
 
@@ -22,78 +23,63 @@ interference between tests.
 
 Create:
 ```
-spec/_node.md
-spec/domain/_node.md
-spec/domain/config/_node.md
+code-from-spec/_node.md
+code-from-spec/domain/_node.md
+code-from-spec/domain/config/_node.md
 ```
 
 Expect `specNodes`:
-- `ROOT` → `spec/_node.md`
-- `ROOT/domain` → `spec/domain/_node.md`
-- `ROOT/domain/config` → `spec/domain/config/_node.md`
+- `ROOT` → `code-from-spec/_node.md`
+- `ROOT/domain` → `code-from-spec/domain/_node.md`
+- `ROOT/domain/config` → `code-from-spec/domain/config/_node.md`
 
 ### Discovers test nodes
 
 Create:
 ```
-spec/domain/config/_node.md
-spec/domain/config/default.test.md
-spec/domain/config/edge_cases.test.md
+code-from-spec/domain/config/_node.md
+code-from-spec/domain/config/default.test.md
+code-from-spec/domain/config/edge_cases.test.md
 ```
 
 Expect `testNodes`:
-- `TEST/domain/config` → `spec/domain/config/default.test.md`
-- `TEST/domain/config(edge_cases)` → `spec/domain/config/edge_cases.test.md`
+- `TEST/domain/config` → `code-from-spec/domain/config/default.test.md`
+- `TEST/domain/config(edge_cases)` → `code-from-spec/domain/config/edge_cases.test.md`
 
-### Discovers external dependencies
+### Test nodes alongside intermediate nodes
 
 Create:
 ```
-external/database/_external.md
-external/celcoin-api/_external.md
+code-from-spec/domain/_node.md
+code-from-spec/domain/default.test.md
+code-from-spec/domain/config/_node.md
 ```
 
-Expect `externalDeps`:
-- `EXTERNAL/celcoin-api` → `external/celcoin-api/_external.md`
-- `EXTERNAL/database` → `external/database/_external.md`
+Expect `testNodes` includes:
+- `TEST/domain` → `code-from-spec/domain/default.test.md`
 
 ### Results are sorted alphabetically
 
 Create a tree where natural filesystem order differs from
-alphabetical order. Verify all three lists are sorted by
+alphabetical order. Verify both lists are sorted by
 `LogicalName`.
 
 ## Edge Cases
 
-### Empty spec directory
+### Empty code-from-spec directory
 
-Create `spec/` with no files. Expect empty `specNodes`,
-empty `testNodes`. No error.
-
-### Empty external directory
-
-Create `external/` with no subdirectories. Expect empty
-`externalDeps`. No error.
+Create `code-from-spec/` with no `_node.md` files.
+Expect an error returned.
 
 ### Non-node files are ignored
 
-Create files in `spec/` that are not `_node.md` or
-`*.test.md` (e.g., `README.md`, `notes.txt`). Expect
-them to be absent from all lists.
-
-### External directory with extra files
-
-Create `external/database/_external.md` alongside other
-files (`schema.sql`, `README.md`). Expect only one
-`externalDeps` entry for `EXTERNAL/database`.
+Create files under `code-from-spec/` that are not
+`_node.md` or `*.test.md` (e.g., `README.md`,
+`notes.txt`). Expect them to be absent from all lists.
 
 ## Failure Cases
 
-### spec directory does not exist
+### code-from-spec directory does not exist
 
-Do not create `spec/`. Expect an error returned.
-
-### external directory does not exist
-
-Do not create `external/`. Spec and test discovery
-should still succeed. `externalDeps` is empty. No error.
+Do not create `code-from-spec/`. Expect an error
+returned.

@@ -1,6 +1,6 @@
 ---
-version: 2
-parent_version: 7
+version: 3
+parent_version: 8
 implements:
   - cmd/staleness-check/speccomment_test.go
 ---
@@ -21,7 +21,7 @@ the path to each test file.
 Create a file with:
 
 ```
-// spec: ROOT/architecture/backend/config@v5
+// code-from-spec: ROOT/architecture/backend/config@v5
 package configuration
 ```
 
@@ -33,7 +33,7 @@ Expect `LogicalName` = `"ROOT/architecture/backend/config"`,
 Create a file with:
 
 ```
-# spec: ROOT/domain/staleness@v3
+# code-from-spec: ROOT/domain/staleness@v3
 ```
 
 Expect `LogicalName` = `"ROOT/domain/staleness"`,
@@ -44,7 +44,7 @@ Expect `LogicalName` = `"ROOT/domain/staleness"`,
 Create a file with:
 
 ```
-<!-- spec: ROOT/frontend/template@v2 -->
+<!-- code-from-spec: ROOT/frontend/template@v2 -->
 ```
 
 Expect `LogicalName` = `"ROOT/frontend/template"`,
@@ -55,7 +55,7 @@ Expect `LogicalName` = `"ROOT/frontend/template"`,
 Create a file with:
 
 ```
-/* spec: ROOT/some/node@v1 */
+/* code-from-spec: ROOT/some/node@v1 */
 ```
 
 Expect `LogicalName` = `"ROOT/some/node"`,
@@ -66,7 +66,7 @@ Expect `LogicalName` = `"ROOT/some/node"`,
 Create a file with:
 
 ```
-// spec: TEST/domain/config@v3
+// code-from-spec: TEST/domain/config@v3
 ```
 
 Expect `LogicalName` = `"TEST/domain/config"`,
@@ -77,7 +77,7 @@ Expect `LogicalName` = `"TEST/domain/config"`,
 Create a file with:
 
 ```
-// spec: TEST/domain/config(edge_cases)@v2
+// code-from-spec: TEST/domain/config(edge_cases)@v2
 ```
 
 Expect `LogicalName` =
@@ -91,7 +91,7 @@ spec comment:
 ```
 #!/usr/bin/env python3
 # License: MIT
-# spec: ROOT/scripts/deploy@v1
+# code-from-spec: ROOT/scripts/deploy@v1
 ```
 
 Expect `LogicalName` = `"ROOT/scripts/deploy"`,
@@ -102,7 +102,7 @@ Expect `LogicalName` = `"ROOT/scripts/deploy"`,
 Create a file with:
 
 ```
--- spec: ROOT/database/migrations@v4
+-- code-from-spec: ROOT/database/migrations@v4
 ```
 
 Expect `LogicalName` = `"ROOT/database/migrations"`,
@@ -120,7 +120,7 @@ comment. Expect it to still be found.
 Create a file with:
 
 ```
-// spec: ROOT/node@v3   
+// code-from-spec: ROOT/node@v3   
 ```
 
 Expect `LogicalName` = `"ROOT/node"`, `Version` = 3.
@@ -130,7 +130,7 @@ Expect `LogicalName` = `"ROOT/node"`, `Version` = 3.
 Create a file with:
 
 ```
-// spec: ROOT/a/b/c/d/e/f@v1
+// code-from-spec: ROOT/a/b/c/d/e/f@v1
 ```
 
 Expect `LogicalName` = `"ROOT/a/b/c/d/e/f"`,
@@ -145,7 +145,7 @@ Expect an error containing the file path.
 
 ### No spec comment in file
 
-Create a file with no `spec:` substring:
+Create a file with no `code-from-spec:` substring:
 
 ```
 package main
@@ -160,7 +160,7 @@ Expect an error indicating no spec comment found.
 Create a file with:
 
 ```
-// spec: ROOT/node@v
+// code-from-spec: ROOT/node@v
 ```
 
 Expect an error indicating malformed spec comment.
@@ -170,7 +170,7 @@ Expect an error indicating malformed spec comment.
 Create a file with:
 
 ```
-// spec: ROOT/node
+// code-from-spec: ROOT/node
 ```
 
 Expect an error indicating malformed spec comment.
@@ -180,7 +180,7 @@ Expect an error indicating malformed spec comment.
 Create a file with:
 
 ```
-// spec: ROOT/node@vabc
+// code-from-spec: ROOT/node@vabc
 ```
 
 Expect an error indicating malformed spec comment.
@@ -190,7 +190,7 @@ Expect an error indicating malformed spec comment.
 Create a file with:
 
 ```
-// spec: @v3
+// code-from-spec: @v3
 ```
 
 Expect an error indicating malformed spec comment.

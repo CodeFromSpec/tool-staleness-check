@@ -1,6 +1,6 @@
 ---
-version: 3
-parent_version: 4
+version: 5
+parent_version: 6
 implements:
   - cmd/staleness-check/logicalnames_test.go
 ---
@@ -17,38 +17,33 @@ and asserts the output.
 
 ### Spec node — root
 
-Input: `spec/_node.md`
+Input: `code-from-spec/_node.md`
 Expect: `"ROOT"`, `true`.
 
 ### Spec node — one level
 
-Input: `spec/domain/_node.md`
+Input: `code-from-spec/domain/_node.md`
 Expect: `"ROOT/domain"`, `true`.
 
 ### Spec node — deep
 
-Input: `spec/tech_design/logical_names/_node.md`
+Input: `code-from-spec/tech_design/logical_names/_node.md`
 Expect: `"ROOT/tech_design/logical_names"`, `true`.
 
 ### Test node — root canonical
 
-Input: `spec/default.test.md`
+Input: `code-from-spec/default.test.md`
 Expect: `"TEST"`, `true`.
 
 ### Test node — canonical
 
-Input: `spec/domain/config/default.test.md`
+Input: `code-from-spec/domain/config/default.test.md`
 Expect: `"TEST/domain/config"`, `true`.
 
 ### Test node — named
 
-Input: `spec/domain/config/edge_cases.test.md`
+Input: `code-from-spec/domain/config/edge_cases.test.md`
 Expect: `"TEST/domain/config(edge_cases)"`, `true`.
-
-### External dependency
-
-Input: `external/celcoin-api/_external.md`
-Expect: `"EXTERNAL/celcoin-api"`, `true`.
 
 ### Unrecognized path
 
@@ -57,7 +52,12 @@ Expect: `""`, `false`.
 
 ### Path without _node.md
 
-Input: `spec/domain/config/something.md`
+Input: `code-from-spec/domain/config/something.md`
+Expect: `""`, `false`.
+
+### Path missing code-from-spec prefix
+
+Input: `domain/config/_node.md`
 Expect: `""`, `false`.
 
 ## PathFromLogicalName
@@ -65,32 +65,32 @@ Expect: `""`, `false`.
 ### ROOT
 
 Input: `"ROOT"`
-Expect: `"spec/_node.md"`, `true`.
+Expect: `"code-from-spec/_node.md"`, `true`.
 
 ### ROOT with path
 
 Input: `"ROOT/domain/staleness"`
-Expect: `"spec/domain/staleness/_node.md"`, `true`.
+Expect: `"code-from-spec/domain/staleness/_node.md"`, `true`.
+
+### ROOT with subsection qualifier
+
+Input: `"ROOT/domain/staleness(interface)"`
+Expect: `"code-from-spec/domain/staleness/_node.md"`, `true`.
 
 ### TEST without path
 
 Input: `"TEST"`
-Expect: `"spec/default.test.md"`, `true`.
+Expect: `"code-from-spec/default.test.md"`, `true`.
 
 ### TEST canonical
 
 Input: `"TEST/domain/config"`
-Expect: `"spec/domain/config/default.test.md"`, `true`.
+Expect: `"code-from-spec/domain/config/default.test.md"`, `true`.
 
 ### TEST named
 
 Input: `"TEST/domain/config(edge_cases)"`
-Expect: `"spec/domain/config/edge_cases.test.md"`, `true`.
-
-### EXTERNAL
-
-Input: `"EXTERNAL/celcoin-api"`
-Expect: `"external/celcoin-api/_external.md"`, `true`.
+Expect: `"code-from-spec/domain/config/edge_cases.test.md"`, `true`.
 
 ### Unrecognized prefix
 
@@ -100,11 +100,6 @@ Expect: `""`, `false`.
 ### Empty string
 
 Input: `""`
-Expect: `""`, `false`.
-
-### EXTERNAL without name
-
-Input: `"EXTERNAL"`
 Expect: `""`, `false`.
 
 ## LogicalNamesMatch
@@ -149,6 +144,16 @@ Expect: `false`.
 Inputs: `"TEST/domain/config"`, `"TEST/domain/config(edge_cases)"`
 Expect: `false`.
 
+### ROOT with qualifier vs ROOT without
+
+Inputs: `"ROOT/domain/config(interface)"`, `"ROOT/domain/config"`
+Expect: `true`.
+
+### ROOT with qualifier vs ROOT without (reversed)
+
+Inputs: `"ROOT/domain/config"`, `"ROOT/domain/config(interface)"`
+Expect: `true`.
+
 ## HasParent
 
 ### ROOT
@@ -175,16 +180,6 @@ Expect: `true`, `true`.
 
 Input: `"TEST/domain/config(edge_cases)"`
 Expect: `true`, `true`.
-
-### EXTERNAL
-
-Input: `"EXTERNAL/celcoin-api"`
-Expect: `false`, `true`.
-
-### EXTERNAL without name
-
-Input: `"EXTERNAL"`
-Expect: `false`, `false`.
 
 ### Empty string
 
@@ -218,12 +213,12 @@ Expect: `"ROOT/tech_design"`, `true`.
 Input: `"TEST"`
 Expect: `"ROOT"`, `true`.
 
-### TEST/x — parent is ROOT/x
+### TEST/x — subject is ROOT/x
 
 Input: `"TEST/domain/config"`
 Expect: `"ROOT/domain/config"`, `true`.
 
-### TEST/x(name) — parent is ROOT/x
+### TEST/x(name) — subject is ROOT/x
 
 Input: `"TEST/domain/config(edge_cases)"`
 Expect: `"ROOT/domain/config"`, `true`.
@@ -231,11 +226,6 @@ Expect: `"ROOT/domain/config"`, `true`.
 ### ROOT has no parent
 
 Input: `"ROOT"`
-Expect: `""`, `false`.
-
-### EXTERNAL has no parent
-
-Input: `"EXTERNAL/celcoin-api"`
 Expect: `""`, `false`.
 
 ### Invalid input

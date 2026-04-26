@@ -1,6 +1,6 @@
 ---
-version: 2
-parent_version: 7
+version: 3
+parent_version: 8
 implements:
   - cmd/staleness-check/frontmatter_test.go
 ---
@@ -27,7 +27,7 @@ parent_version: 2
 depends_on:
   - path: ROOT/other
     version: 1
-  - path: EXTERNAL/database
+  - path: ROOT/another
     version: 5
 implements:
   - internal/config/config.go
@@ -52,9 +52,27 @@ version: 5
 # ROOT
 ```
 
-Expect `Version` = 5, `ParentVersion` = 0,
-`DependsOn` = nil, `Implements` = nil,
-`Title` = `"ROOT"`.
+Expect `Version` = 5, `ParentVersion` = nil,
+`SubjectVersion` = nil, `DependsOn` = nil,
+`Implements` = nil, `Title` = `"ROOT"`.
+
+### Parses test node with subject_version
+
+Create a file with `subject_version`:
+
+```
+---
+version: 2
+subject_version: 5
+implements:
+  - internal/config/config_test.go
+---
+
+# TEST/some/node
+```
+
+Expect `Version` = 2, `SubjectVersion` pointing to 5,
+`ParentVersion` = nil, `Title` = `"TEST/some/node"`.
 
 ### Parses external dependency
 
@@ -65,10 +83,10 @@ Create a file with only `version`:
 version: 2
 ---
 
-# EXTERNAL/database
+# ROOT/external/database
 ```
 
-Expect `Version` = 2, `Title` = `"EXTERNAL/database"`.
+Expect `Version` = 2, `Title` = `"ROOT/external/database"`.
 
 ### Ignores unknown frontmatter fields
 
@@ -95,7 +113,7 @@ Create a file with:
 ```
 ---
 version: 1
-parent_version: 2
+subject_version: 2
 implements:
   - internal/config/config_test.go
 ---
@@ -112,7 +130,7 @@ Create a file with:
 ```
 ---
 version: 1
-parent_version: 2
+subject_version: 2
 implements:
   - internal/config/config_edge_test.go
 ---
@@ -135,7 +153,7 @@ Create a file with:
 # ROOT/node
 ```
 
-Expect `Version` = 0, all other fields zero/nil,
+Expect `Version` = nil, all other fields zero/nil,
 `Title` = `"ROOT/node"`. No error.
 
 ### Title with blank lines between frontmatter and title

@@ -1,6 +1,6 @@
 ---
-version: 2
-parent_version: 4
+version: 4
+parent_version: 6
 implements:
   - cmd/staleness-check/codestaleness_test.go
 ---
@@ -16,52 +16,57 @@ is called on real files — no mocking. `Version` in
 `Frontmatter` is `*int` — use helper to create pointer
 values.
 
+Cache keys and `DiscoveredNode.FilePath` values are
+project-root-relative paths (e.g.,
+`code-from-spec/domain/config/_node.md`).
+
 ## Happy Path
 
 ### All files up to date
 
 Cache contains:
-- `spec/domain/config/_node.md`: Version=2,
+- `code-from-spec/domain/config/_node.md`: Version=2,
   Implements=[`<tmpdir>/config.go`]
 
 Create `<tmpdir>/config.go` with content:
 ```
-// spec: ROOT/domain/config@v2
+// code-from-spec: ROOT/domain/config@v2
 package config
 ```
 
 Node: LogicalName=`"ROOT/domain/config"`,
-FilePath=`"spec/domain/config/_node.md"`.
+FilePath=`"code-from-spec/domain/config/_node.md"`.
 
 Expect: empty slice.
 
 ### Multiple files all up to date
 
 Cache contains:
-- `spec/domain/config/_node.md`: Version=3,
+- `code-from-spec/domain/config/_node.md`: Version=3,
   Implements=[`<tmpdir>/config.go`, `<tmpdir>/util.go`]
 
-Create both files with `// spec: ROOT/domain/config@v3`.
+Create both files with
+`// code-from-spec: ROOT/domain/config@v3`.
 
 Node: LogicalName=`"ROOT/domain/config"`,
-FilePath=`"spec/domain/config/_node.md"`.
+FilePath=`"code-from-spec/domain/config/_node.md"`.
 
 Expect: empty slice.
 
 ### Test node with canonical equivalence
 
 Cache contains:
-- `spec/domain/config/default.test.md`: Version=1,
-  Implements=[`<tmpdir>/config_test.go`]
+- `code-from-spec/domain/config/default.test.md`:
+  Version=1, Implements=[`<tmpdir>/config_test.go`]
 
 Create `<tmpdir>/config_test.go` with:
 ```
-// spec: TEST/domain/config(default)@v1
+// code-from-spec: TEST/domain/config(default)@v1
 package config
 ```
 
 Node: LogicalName=`"TEST/domain/config"`,
-FilePath=`"spec/domain/config/default.test.md"`.
+FilePath=`"code-from-spec/domain/config/default.test.md"`.
 
 Expect: empty slice (LogicalNamesMatch treats
 `TEST/domain/config` and `TEST/domain/config(default)`
@@ -70,10 +75,11 @@ as equal).
 ### No implements
 
 Cache contains:
-- `spec/domain/_node.md`: Version=5, Implements=nil
+- `code-from-spec/domain/_node.md`: Version=5,
+  Implements=nil
 
 Node: LogicalName=`"ROOT/domain"`,
-FilePath=`"spec/domain/_node.md"`.
+FilePath=`"code-from-spec/domain/_node.md"`.
 
 Expect: empty slice.
 
@@ -84,7 +90,7 @@ Expect: empty slice.
 Cache is empty.
 
 Node: LogicalName=`"ROOT/domain/config"`,
-FilePath=`"spec/domain/config/_node.md"`.
+FilePath=`"code-from-spec/domain/config/_node.md"`.
 
 Expect: single result with Node=`"ROOT/domain/config"`,
 File=`""`, Status=`"unreadable_frontmatter"`.
@@ -92,10 +98,7 @@ File=`""`, Status=`"unreadable_frontmatter"`.
 ### Node nil in cache
 
 Cache contains:
-- `spec/domain/config/_node.md`: nil
-
-Node: LogicalName=`"ROOT/domain/config"`,
-FilePath=`"spec/domain/config/_node.md"`.
+- `code-from-spec/domain/config/_node.md`: nil
 
 Expect: single result with
 Status=`"unreadable_frontmatter"`.
@@ -103,11 +106,8 @@ Status=`"unreadable_frontmatter"`.
 ### Version nil
 
 Cache contains:
-- `spec/domain/config/_node.md`: Version=nil,
+- `code-from-spec/domain/config/_node.md`: Version=nil,
   Implements=[`<tmpdir>/config.go`]
-
-Node: LogicalName=`"ROOT/domain/config"`,
-FilePath=`"spec/domain/config/_node.md"`.
 
 Expect: single result with Status=`"no_version"`.
 
@@ -116,13 +116,13 @@ Expect: single result with Status=`"no_version"`.
 ### missing — file does not exist
 
 Cache contains:
-- `spec/domain/config/_node.md`: Version=2,
+- `code-from-spec/domain/config/_node.md`: Version=2,
   Implements=[`<tmpdir>/nonexistent.go`]
 
 Do not create the file.
 
 Node: LogicalName=`"ROOT/domain/config"`,
-FilePath=`"spec/domain/config/_node.md"`.
+FilePath=`"code-from-spec/domain/config/_node.md"`.
 
 Expect: single result with
 Node=`"ROOT/domain/config"`,
@@ -132,7 +132,7 @@ Status=`"missing"`.
 ### no_spec_comment
 
 Cache contains:
-- `spec/domain/config/_node.md`: Version=2,
+- `code-from-spec/domain/config/_node.md`: Version=2,
   Implements=[`<tmpdir>/config.go`]
 
 Create `<tmpdir>/config.go` with:
@@ -142,25 +142,19 @@ package config
 func Init() {}
 ```
 
-Node: LogicalName=`"ROOT/domain/config"`,
-FilePath=`"spec/domain/config/_node.md"`.
-
 Expect: single result with Status=`"no_spec_comment"`.
 
 ### malformed_spec_comment
 
 Cache contains:
-- `spec/domain/config/_node.md`: Version=2,
+- `code-from-spec/domain/config/_node.md`: Version=2,
   Implements=[`<tmpdir>/config.go`]
 
 Create `<tmpdir>/config.go` with:
 ```
-// spec: ROOT/domain/config@vabc
+// code-from-spec: ROOT/domain/config@vabc
 package config
 ```
-
-Node: LogicalName=`"ROOT/domain/config"`,
-FilePath=`"spec/domain/config/_node.md"`.
 
 Expect: single result with
 Status=`"malformed_spec_comment"`.
@@ -168,34 +162,28 @@ Status=`"malformed_spec_comment"`.
 ### wrong_node
 
 Cache contains:
-- `spec/domain/config/_node.md`: Version=2,
+- `code-from-spec/domain/config/_node.md`: Version=2,
   Implements=[`<tmpdir>/config.go`]
 
 Create `<tmpdir>/config.go` with:
 ```
-// spec: ROOT/domain/other@v2
+// code-from-spec: ROOT/domain/other@v2
 package config
 ```
-
-Node: LogicalName=`"ROOT/domain/config"`,
-FilePath=`"spec/domain/config/_node.md"`.
 
 Expect: single result with Status=`"wrong_node"`.
 
 ### stale
 
 Cache contains:
-- `spec/domain/config/_node.md`: Version=3,
+- `code-from-spec/domain/config/_node.md`: Version=3,
   Implements=[`<tmpdir>/config.go`]
 
 Create `<tmpdir>/config.go` with:
 ```
-// spec: ROOT/domain/config@v2
+// code-from-spec: ROOT/domain/config@v2
 package config
 ```
-
-Node: LogicalName=`"ROOT/domain/config"`,
-FilePath=`"spec/domain/config/_node.md"`.
 
 Version is 3 but spec comment says v2.
 
@@ -206,27 +194,25 @@ Expect: single result with Status=`"stale"`.
 ### Mixed results across files
 
 Cache contains:
-- `spec/domain/config/_node.md`: Version=3,
+- `code-from-spec/domain/config/_node.md`: Version=3,
   Implements=[`<tmpdir>/a.go`, `<tmpdir>/b.go`,
   `<tmpdir>/c.go`]
 
 Create `<tmpdir>/a.go` with:
 ```
-// spec: ROOT/domain/config@v3
+// code-from-spec: ROOT/domain/config@v3
 package config
 ```
 Create `<tmpdir>/b.go` with:
 ```
-// spec: ROOT/domain/config@v2
+// code-from-spec: ROOT/domain/config@v2
 package config
 ```
 Do not create `<tmpdir>/c.go`.
 
 Node: LogicalName=`"ROOT/domain/config"`,
-FilePath=`"spec/domain/config/_node.md"`.
+FilePath=`"code-from-spec/domain/config/_node.md"`.
 
 Expect: two results:
 - File=`"<tmpdir>/b.go"`, Status=`"stale"`
 - File=`"<tmpdir>/c.go"`, Status=`"missing"`
-
-(a.go is up to date, omitted from results.)
