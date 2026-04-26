@@ -1,4 +1,4 @@
-// code-from-spec: ROOT/tech_design/main@v17
+// code-from-spec: ROOT/tech_design/main@v18
 //
 // Entry point for the staleness-check CLI tool.
 // Orchestrates discovery, frontmatter parsing, staleness

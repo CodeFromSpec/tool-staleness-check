@@ -1,11 +1,11 @@
 ---
-version: 14
-parent_version: 2
+version: 16
+parent_version: 3
 depends_on:
   - path: ROOT/domain/specifications
     version: 4
   - path: ROOT/tech_design/internal/logical_names
-    version: 9
+    version: 10
 implements:
   - internal/discovery/discovery.go
 ---

@@ -1,6 +1,6 @@
 ---
-version: 9
-parent_version: 14
+version: 10
+parent_version: 16
 implements:
   - internal/discovery/discovery_test.go
 ---

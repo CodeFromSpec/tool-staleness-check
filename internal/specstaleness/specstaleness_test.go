@@ -1,4 +1,4 @@
-// code-from-spec: TEST/tech_design/internal/spec_staleness@v8
+// code-from-spec: TEST/tech_design/internal/spec_staleness@v13
 package specstaleness
 
 import (
@@ -8,9 +8,39 @@ import (
 	"github.com/CodeFromSpec/tool-staleness-check/v2/internal/frontmatter"
 )
 
-// intPtr is a helper to create *int values for Frontmatter fields.
-func intPtr(v int) *int {
-	return &v
+// testIntPtr creates a *int from a plain int, for use in Frontmatter
+// pointer fields. Named testIntPtr as required by the spec.
+func testIntPtr(n int) *int { return &n }
+
+// testMakeFM constructs a *frontmatter.Frontmatter for test caches.
+// Pass nil for absent optional fields.
+// The dependsOn parameter type is []frontmatter.DependsOn — pass nil
+// when there are no dependencies.
+func testMakeFM(
+	version *int,
+	parentVersion *int,
+	subjectVersion *int,
+	title string,
+	dependsOn []frontmatter.DependsOn,
+) *frontmatter.Frontmatter {
+	return &frontmatter.Frontmatter{
+		Version:        version,
+		ParentVersion:  parentVersion,
+		SubjectVersion: subjectVersion,
+		Title:          title,
+		DependsOn:      dependsOn,
+	}
+}
+
+// hasStatus is a test helper that checks whether any result in the
+// slice has the given status string.
+func hasStatus(results []StalenessResult, status string) bool {
+	for _, r := range results {
+		if r.Status == status {
+			return true
+		}
+	}
+	return false
 }
 
 // --- Happy Path — Spec Nodes ---
@@ -18,15 +48,12 @@ func intPtr(v int) *int {
 func TestAllChecksPass_SpecNode(t *testing.T) {
 	// Parent version matches, title matches — no staleness.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/_node.md": {
-			Version:       intPtr(2),
-			ParentVersion: intPtr(5),
-			Title:         "ROOT/domain/config",
-		},
-		"code-from-spec/domain/_node.md": {
-			Version: intPtr(5),
-			Title:   "ROOT/domain",
-		},
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			testIntPtr(2), testIntPtr(5), nil, "ROOT/domain/config", nil,
+		),
+		"code-from-spec/domain/_node.md": testMakeFM(
+			testIntPtr(5), nil, nil, "ROOT/domain", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -43,10 +70,9 @@ func TestAllChecksPass_SpecNode(t *testing.T) {
 func TestAllChecksPass_RootNode(t *testing.T) {
 	// Root node has no parent — only version and title checked.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/_node.md": {
-			Version: intPtr(7),
-			Title:   "ROOT",
-		},
+		"code-from-spec/_node.md": testMakeFM(
+			testIntPtr(7), nil, nil, "ROOT", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -63,22 +89,16 @@ func TestAllChecksPass_RootNode(t *testing.T) {
 func TestAllChecksPass_SpecNodeWithDependencies(t *testing.T) {
 	// Node with a dependency — all versions match.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/tech_design/main/_node.md": {
-			Version:       intPtr(3),
-			ParentVersion: intPtr(10),
-			Title:         "ROOT/tech_design/main",
-			DependsOn: []frontmatter.DependsOnEntry{
-				{Path: "ROOT/domain/staleness", Version: 6},
-			},
-		},
-		"code-from-spec/tech_design/_node.md": {
-			Version: intPtr(10),
-			Title:   "ROOT/tech_design",
-		},
-		"code-from-spec/domain/staleness/_node.md": {
-			Version: intPtr(6),
-			Title:   "ROOT/domain/staleness",
-		},
+		"code-from-spec/tech_design/main/_node.md": testMakeFM(
+			testIntPtr(3), testIntPtr(10), nil, "ROOT/tech_design/main",
+			[]frontmatter.DependsOn{{Path: "ROOT/domain/staleness", Version: 6}},
+		),
+		"code-from-spec/tech_design/_node.md": testMakeFM(
+			testIntPtr(10), nil, nil, "ROOT/tech_design", nil,
+		),
+		"code-from-spec/domain/staleness/_node.md": testMakeFM(
+			testIntPtr(6), nil, nil, "ROOT/domain/staleness", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -97,15 +117,12 @@ func TestAllChecksPass_SpecNodeWithDependencies(t *testing.T) {
 func TestAllChecksPass_TestNode(t *testing.T) {
 	// Test node with subject version matching — no staleness.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/default.test.md": {
-			Version:        intPtr(1),
-			SubjectVersion: intPtr(2),
-			Title:          "TEST/domain/config",
-		},
-		"code-from-spec/domain/config/_node.md": {
-			Version: intPtr(2),
-			Title:   "ROOT/domain/config",
-		},
+		"code-from-spec/domain/config/default.test.md": testMakeFM(
+			testIntPtr(1), nil, testIntPtr(2), "TEST/domain/config", nil,
+		),
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			testIntPtr(2), nil, nil, "ROOT/domain/config", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -122,15 +139,12 @@ func TestAllChecksPass_TestNode(t *testing.T) {
 func TestAllChecksPass_NamedTestNode(t *testing.T) {
 	// Named test node — subject version matches.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/edge_cases.test.md": {
-			Version:        intPtr(1),
-			SubjectVersion: intPtr(2),
-			Title:          "TEST/domain/config(edge_cases)",
-		},
-		"code-from-spec/domain/config/_node.md": {
-			Version: intPtr(2),
-			Title:   "ROOT/domain/config",
-		},
+		"code-from-spec/domain/config/edge_cases.test.md": testMakeFM(
+			testIntPtr(1), nil, testIntPtr(2), "TEST/domain/config(edge_cases)", nil,
+		),
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			testIntPtr(2), nil, nil, "ROOT/domain/config", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -148,15 +162,12 @@ func TestWrongName_TESTCanonicalVsTESTDefault(t *testing.T) {
 	// LogicalNamesMatch treats TEST/domain/config and
 	// TEST/domain/config(default) as equal — no wrong_name.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/default.test.md": {
-			Version:        intPtr(1),
-			SubjectVersion: intPtr(2),
-			Title:          "TEST/domain/config(default)",
-		},
-		"code-from-spec/domain/config/_node.md": {
-			Version: intPtr(2),
-			Title:   "ROOT/domain/config",
-		},
+		"code-from-spec/domain/config/default.test.md": testMakeFM(
+			testIntPtr(1), nil, testIntPtr(2), "TEST/domain/config(default)", nil,
+		),
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			testIntPtr(2), nil, nil, "ROOT/domain/config", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -213,11 +224,9 @@ func TestNodeNilInCache_SpecNode(t *testing.T) {
 func TestVersionMissing_SpecNode(t *testing.T) {
 	// Version is nil — required field missing.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/_node.md": {
-			Version:       nil,
-			ParentVersion: intPtr(5),
-			Title:         "ROOT/domain/config",
-		},
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			nil, testIntPtr(5), nil, "ROOT/domain/config", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -237,11 +246,9 @@ func TestVersionMissing_SpecNode(t *testing.T) {
 func TestParentVersionMissing_NonRoot(t *testing.T) {
 	// Non-root node with nil ParentVersion — required field missing.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/_node.md": {
-			Version:       intPtr(2),
-			ParentVersion: nil,
-			Title:         "ROOT/domain/config",
-		},
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			testIntPtr(2), nil, nil, "ROOT/domain/config", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -261,11 +268,9 @@ func TestParentVersionMissing_NonRoot(t *testing.T) {
 func TestParentVersionMissing_RootIsOk(t *testing.T) {
 	// Root node does not require parent_version.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/_node.md": {
-			Version:       intPtr(7),
-			ParentVersion: nil,
-			Title:         "ROOT",
-		},
+		"code-from-spec/_node.md": testMakeFM(
+			testIntPtr(7), nil, nil, "ROOT", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -302,11 +307,9 @@ func TestNodeNotInCache_TestNode(t *testing.T) {
 func TestVersionMissing_TestNode(t *testing.T) {
 	// Test node with nil Version.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/default.test.md": {
-			Version:        nil,
-			SubjectVersion: intPtr(2),
-			Title:          "TEST/domain/config",
-		},
+		"code-from-spec/domain/config/default.test.md": testMakeFM(
+			nil, nil, testIntPtr(2), "TEST/domain/config", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -326,11 +329,9 @@ func TestVersionMissing_TestNode(t *testing.T) {
 func TestSubjectVersionMissing_TestNode(t *testing.T) {
 	// Test node with nil SubjectVersion — required for test nodes.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/default.test.md": {
-			Version:        intPtr(1),
-			SubjectVersion: nil,
-			Title:          "TEST/domain/config",
-		},
+		"code-from-spec/domain/config/default.test.md": testMakeFM(
+			testIntPtr(1), nil, nil, "TEST/domain/config", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -352,15 +353,12 @@ func TestSubjectVersionMissing_TestNode(t *testing.T) {
 func TestWrongName_TitleMismatch(t *testing.T) {
 	// Title says "ROOT/domain/old_name" but node is "ROOT/domain/config".
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/_node.md": {
-			Version:       intPtr(2),
-			ParentVersion: intPtr(5),
-			Title:         "ROOT/domain/old_name",
-		},
-		"code-from-spec/domain/_node.md": {
-			Version: intPtr(5),
-			Title:   "ROOT/domain",
-		},
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			testIntPtr(2), testIntPtr(5), nil, "ROOT/domain/old_name", nil,
+		),
+		"code-from-spec/domain/_node.md": testMakeFM(
+			testIntPtr(5), nil, nil, "ROOT/domain", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -380,15 +378,12 @@ func TestWrongName_TitleMismatch(t *testing.T) {
 func TestWrongName_EmptyTitle(t *testing.T) {
 	// Empty title should produce wrong_name.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/_node.md": {
-			Version:       intPtr(2),
-			ParentVersion: intPtr(5),
-			Title:         "",
-		},
-		"code-from-spec/domain/_node.md": {
-			Version: intPtr(5),
-			Title:   "ROOT/domain",
-		},
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			testIntPtr(2), testIntPtr(5), nil, "", nil,
+		),
+		"code-from-spec/domain/_node.md": testMakeFM(
+			testIntPtr(5), nil, nil, "ROOT/domain", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -405,11 +400,9 @@ func TestWrongName_EmptyTitle(t *testing.T) {
 func TestInvalidParent_NotInCache(t *testing.T) {
 	// Parent path resolves but is not in cache.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/_node.md": {
-			Version:       intPtr(2),
-			ParentVersion: intPtr(5),
-			Title:         "ROOT/domain/config",
-		},
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			testIntPtr(2), testIntPtr(5), nil, "ROOT/domain/config", nil,
+		),
 		// code-from-spec/domain/_node.md deliberately absent
 	}
 
@@ -427,11 +420,9 @@ func TestInvalidParent_NotInCache(t *testing.T) {
 func TestInvalidParent_NilInCache(t *testing.T) {
 	// Parent path is in cache but value is nil.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/_node.md": {
-			Version:       intPtr(2),
-			ParentVersion: intPtr(5),
-			Title:         "ROOT/domain/config",
-		},
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			testIntPtr(2), testIntPtr(5), nil, "ROOT/domain/config", nil,
+		),
 		"code-from-spec/domain/_node.md": nil,
 	}
 
@@ -449,15 +440,12 @@ func TestInvalidParent_NilInCache(t *testing.T) {
 func TestParentChanged(t *testing.T) {
 	// ParentVersion is 5 but parent's actual version is 6.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/_node.md": {
-			Version:       intPtr(2),
-			ParentVersion: intPtr(5),
-			Title:         "ROOT/domain/config",
-		},
-		"code-from-spec/domain/_node.md": {
-			Version: intPtr(6),
-			Title:   "ROOT/domain",
-		},
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			testIntPtr(2), testIntPtr(5), nil, "ROOT/domain/config", nil,
+		),
+		"code-from-spec/domain/_node.md": testMakeFM(
+			testIntPtr(6), nil, nil, "ROOT/domain", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -479,11 +467,9 @@ func TestParentChanged(t *testing.T) {
 func TestInvalidSubject_NotInCache(t *testing.T) {
 	// Subject (the _node.md for the test's directory) is not in cache.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/default.test.md": {
-			Version:        intPtr(1),
-			SubjectVersion: intPtr(2),
-			Title:          "TEST/domain/config",
-		},
+		"code-from-spec/domain/config/default.test.md": testMakeFM(
+			testIntPtr(1), nil, testIntPtr(2), "TEST/domain/config", nil,
+		),
 		// code-from-spec/domain/config/_node.md deliberately absent
 	}
 
@@ -501,11 +487,9 @@ func TestInvalidSubject_NotInCache(t *testing.T) {
 func TestInvalidSubject_NilInCache(t *testing.T) {
 	// Subject is in cache but value is nil.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/default.test.md": {
-			Version:        intPtr(1),
-			SubjectVersion: intPtr(2),
-			Title:          "TEST/domain/config",
-		},
+		"code-from-spec/domain/config/default.test.md": testMakeFM(
+			testIntPtr(1), nil, testIntPtr(2), "TEST/domain/config", nil,
+		),
 		"code-from-spec/domain/config/_node.md": nil,
 	}
 
@@ -523,15 +507,12 @@ func TestInvalidSubject_NilInCache(t *testing.T) {
 func TestSubjectChanged(t *testing.T) {
 	// SubjectVersion is 2 but subject's actual version is 3.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/default.test.md": {
-			Version:        intPtr(1),
-			SubjectVersion: intPtr(2),
-			Title:          "TEST/domain/config",
-		},
-		"code-from-spec/domain/config/_node.md": {
-			Version: intPtr(3),
-			Title:   "ROOT/domain/config",
-		},
+		"code-from-spec/domain/config/default.test.md": testMakeFM(
+			testIntPtr(1), nil, testIntPtr(2), "TEST/domain/config", nil,
+		),
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			testIntPtr(3), nil, nil, "ROOT/domain/config", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -553,18 +534,13 @@ func TestSubjectChanged(t *testing.T) {
 func TestInvalidDependency_PathCannotBeResolved(t *testing.T) {
 	// Dependency path "INVALID/bad" cannot be resolved by PathFromLogicalName.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/_node.md": {
-			Version:       intPtr(2),
-			ParentVersion: intPtr(5),
-			Title:         "ROOT/domain/config",
-			DependsOn: []frontmatter.DependsOnEntry{
-				{Path: "INVALID/bad", Version: 1},
-			},
-		},
-		"code-from-spec/domain/_node.md": {
-			Version: intPtr(5),
-			Title:   "ROOT/domain",
-		},
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			testIntPtr(2), testIntPtr(5), nil, "ROOT/domain/config",
+			[]frontmatter.DependsOn{{Path: "INVALID/bad", Version: 1}},
+		),
+		"code-from-spec/domain/_node.md": testMakeFM(
+			testIntPtr(5), nil, nil, "ROOT/domain", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -581,18 +557,13 @@ func TestInvalidDependency_PathCannotBeResolved(t *testing.T) {
 func TestInvalidDependency_NotInCache(t *testing.T) {
 	// Dependency path resolves but is not in cache.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/_node.md": {
-			Version:       intPtr(2),
-			ParentVersion: intPtr(5),
-			Title:         "ROOT/domain/config",
-			DependsOn: []frontmatter.DependsOnEntry{
-				{Path: "ROOT/domain/staleness", Version: 6},
-			},
-		},
-		"code-from-spec/domain/_node.md": {
-			Version: intPtr(5),
-			Title:   "ROOT/domain",
-		},
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			testIntPtr(2), testIntPtr(5), nil, "ROOT/domain/config",
+			[]frontmatter.DependsOn{{Path: "ROOT/domain/staleness", Version: 6}},
+		),
+		"code-from-spec/domain/_node.md": testMakeFM(
+			testIntPtr(5), nil, nil, "ROOT/domain", nil,
+		),
 		// code-from-spec/domain/staleness/_node.md deliberately absent
 	}
 
@@ -610,22 +581,16 @@ func TestInvalidDependency_NotInCache(t *testing.T) {
 func TestDependencyChanged(t *testing.T) {
 	// DependsOn version is 4 but dependency's actual version is 6.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/_node.md": {
-			Version:       intPtr(2),
-			ParentVersion: intPtr(5),
-			Title:         "ROOT/domain/config",
-			DependsOn: []frontmatter.DependsOnEntry{
-				{Path: "ROOT/domain/staleness", Version: 4},
-			},
-		},
-		"code-from-spec/domain/_node.md": {
-			Version: intPtr(5),
-			Title:   "ROOT/domain",
-		},
-		"code-from-spec/domain/staleness/_node.md": {
-			Version: intPtr(6),
-			Title:   "ROOT/domain/staleness",
-		},
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			testIntPtr(2), testIntPtr(5), nil, "ROOT/domain/config",
+			[]frontmatter.DependsOn{{Path: "ROOT/domain/staleness", Version: 4}},
+		),
+		"code-from-spec/domain/_node.md": testMakeFM(
+			testIntPtr(5), nil, nil, "ROOT/domain", nil,
+		),
+		"code-from-spec/domain/staleness/_node.md": testMakeFM(
+			testIntPtr(6), nil, nil, "ROOT/domain/staleness", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -646,22 +611,16 @@ func TestDependencyWithSubsectionQualifier(t *testing.T) {
 	// Dependency path has a subsection qualifier "(interface)" that
 	// should be stripped during resolution. Version matches — no staleness.
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/_node.md": {
-			Version:       intPtr(2),
-			ParentVersion: intPtr(5),
-			Title:         "ROOT/domain/config",
-			DependsOn: []frontmatter.DependsOnEntry{
-				{Path: "ROOT/domain/staleness(interface)", Version: 6},
-			},
-		},
-		"code-from-spec/domain/_node.md": {
-			Version: intPtr(5),
-			Title:   "ROOT/domain",
-		},
-		"code-from-spec/domain/staleness/_node.md": {
-			Version: intPtr(6),
-			Title:   "ROOT/domain/staleness",
-		},
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			testIntPtr(2), testIntPtr(5), nil, "ROOT/domain/config",
+			[]frontmatter.DependsOn{{Path: "ROOT/domain/staleness(interface)", Version: 6}},
+		),
+		"code-from-spec/domain/_node.md": testMakeFM(
+			testIntPtr(5), nil, nil, "ROOT/domain", nil,
+		),
+		"code-from-spec/domain/staleness/_node.md": testMakeFM(
+			testIntPtr(6), nil, nil, "ROOT/domain/staleness", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -681,22 +640,16 @@ func TestMultipleProblems_SpecNode(t *testing.T) {
 	// Three problems: wrong title, parent changed (5 vs 6),
 	// dependency changed (4 vs 6).
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/_node.md": {
-			Version:       intPtr(2),
-			ParentVersion: intPtr(5),
-			Title:         "ROOT/domain/old_name",
-			DependsOn: []frontmatter.DependsOnEntry{
-				{Path: "ROOT/domain/staleness", Version: 4},
-			},
-		},
-		"code-from-spec/domain/_node.md": {
-			Version: intPtr(6),
-			Title:   "ROOT/domain",
-		},
-		"code-from-spec/domain/staleness/_node.md": {
-			Version: intPtr(6),
-			Title:   "ROOT/domain/staleness",
-		},
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			testIntPtr(2), testIntPtr(5), nil, "ROOT/domain/old_name",
+			[]frontmatter.DependsOn{{Path: "ROOT/domain/staleness", Version: 4}},
+		),
+		"code-from-spec/domain/_node.md": testMakeFM(
+			testIntPtr(6), nil, nil, "ROOT/domain", nil,
+		),
+		"code-from-spec/domain/staleness/_node.md": testMakeFM(
+			testIntPtr(6), nil, nil, "ROOT/domain/staleness", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -723,22 +676,16 @@ func TestMultipleProblems_TestNode(t *testing.T) {
 	// Three problems: wrong title, subject changed (2 vs 3),
 	// dependency changed (4 vs 6).
 	cache := map[string]*frontmatter.Frontmatter{
-		"code-from-spec/domain/config/default.test.md": {
-			Version:        intPtr(1),
-			SubjectVersion: intPtr(2),
-			Title:          "TEST/domain/wrong",
-			DependsOn: []frontmatter.DependsOnEntry{
-				{Path: "ROOT/domain/staleness", Version: 4},
-			},
-		},
-		"code-from-spec/domain/config/_node.md": {
-			Version: intPtr(3),
-			Title:   "ROOT/domain/config",
-		},
-		"code-from-spec/domain/staleness/_node.md": {
-			Version: intPtr(6),
-			Title:   "ROOT/domain/staleness",
-		},
+		"code-from-spec/domain/config/default.test.md": testMakeFM(
+			testIntPtr(1), nil, testIntPtr(2), "TEST/domain/wrong",
+			[]frontmatter.DependsOn{{Path: "ROOT/domain/staleness", Version: 4}},
+		),
+		"code-from-spec/domain/config/_node.md": testMakeFM(
+			testIntPtr(3), nil, nil, "ROOT/domain/config", nil,
+		),
+		"code-from-spec/domain/staleness/_node.md": testMakeFM(
+			testIntPtr(6), nil, nil, "ROOT/domain/staleness", nil,
+		),
 	}
 
 	node := discovery.DiscoveredNode{
@@ -779,15 +726,4 @@ func TestBlockingStepPreventsAccumulation(t *testing.T) {
 	if results[0].Status != "invalid_frontmatter" {
 		t.Errorf("expected status invalid_frontmatter, got %s", results[0].Status)
 	}
-}
-
-// hasStatus is a test helper that checks whether any result in the
-// slice has the given status string.
-func hasStatus(results []StalenessResult, status string) bool {
-	for _, r := range results {
-		if r.Status == status {
-			return true
-		}
-	}
-	return false
 }

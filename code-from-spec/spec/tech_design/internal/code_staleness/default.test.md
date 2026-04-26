@@ -1,13 +1,13 @@
 ---
-version: 12
-parent_version: 12
+version: 13
+parent_version: 15
 depends_on:
   - path: ROOT/tech_design/internal/discovery
-    version: 14
+    version: 16
   - path: ROOT/tech_design/internal/frontmatter
-    version: 11
-  - path: ROOT/tech_design/internal/spec_comment
     version: 12
+  - path: ROOT/tech_design/internal/spec_comment
+    version: 13
 implements:
   - internal/codestaleness/codestaleness_test.go
 ---

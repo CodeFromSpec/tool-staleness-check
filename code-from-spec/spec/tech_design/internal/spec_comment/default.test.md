@@ -1,6 +1,6 @@
 ---
-version: 7
-parent_version: 12
+version: 8
+parent_version: 13
 implements:
   - internal/speccomment/speccomment_test.go
 ---

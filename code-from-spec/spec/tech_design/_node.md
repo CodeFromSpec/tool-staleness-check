@@ -1,5 +1,5 @@
 ---
-version: 12
+version: 14
 parent_version: 9
 ---
 
@@ -64,3 +64,11 @@ The module path is:
   for any realistic spec tree.
 - No configuration files. Behavior is fully determined by
   the spec tree on disk.
+
+## Test Conventions
+
+- All test helper functions and types must be prefixed with `test`
+  (e.g., `testMakeFM`, `testIntPtr`, `testCase`). This prevents name
+  collisions with unexported functions and types in the package under
+  test when using internal test files (same package as the
+  implementation).
