@@ -1,13 +1,13 @@
 ---
-version: 4
+version: 6
 parent_version: 11
 depends_on:
   - path: ROOT/domain/staleness
-    version: 6
+    version: 7
   - path: ROOT/domain/output
-    version: 6
+    version: 7
   - path: ROOT/tech_design/logical_names
-    version: 4
+    version: 6
 implements:
   - cmd/staleness-check/codestaleness.go
 ---
