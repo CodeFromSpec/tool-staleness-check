@@ -1,11 +1,11 @@
 ---
-version: 3
-parent_version: 8
+version: 5
+parent_version: 10
 implements:
-  - cmd/staleness-check/speccomment_test.go
+  - internal/speccomment/speccomment_test.go
 ---
 
-# TEST/tech_design/spec_comment
+# TEST/tech_design/internal/spec_comment
 
 ## Context
 

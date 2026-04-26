@@ -1,11 +1,11 @@
 ---
-version: 4
-parent_version: 6
+version: 7
+parent_version: 9
 implements:
-  - cmd/staleness-check/codestaleness_test.go
+  - internal/codestaleness/codestaleness_test.go
 ---
 
-# TEST/tech_design/code_staleness
+# TEST/tech_design/internal/code_staleness
 
 ## Context
 

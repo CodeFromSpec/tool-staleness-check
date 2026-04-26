@@ -1,20 +1,20 @@
 ---
-version: 7
-parent_version: 11
+version: 10
+parent_version: 1
 depends_on:
-  - path: ROOT/domain/staleness
-    version: 7
   - path: ROOT/domain/name_verification
     version: 3
   - path: ROOT/domain/output
     version: 7
-  - path: ROOT/tech_design/logical_names
-    version: 6
+  - path: ROOT/domain/staleness
+    version: 7
+  - path: ROOT/tech_design/internal/logical_names
+    version: 8
 implements:
-  - cmd/staleness-check/specstaleness.go
+  - internal/specstaleness/specstaleness.go
 ---
 
-# ROOT/tech_design/spec_staleness
+# ROOT/tech_design/internal/spec_staleness
 
 ## Intent
 
@@ -23,6 +23,10 @@ invokes this function once per discovered node (spec or
 test) and collects the results.
 
 ## Contracts
+
+### Package
+
+`specstaleness`
 
 ### Interface
 

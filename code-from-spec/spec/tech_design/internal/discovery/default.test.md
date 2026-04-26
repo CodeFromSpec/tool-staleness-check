@@ -1,11 +1,11 @@
 ---
-version: 5
-parent_version: 9
+version: 8
+parent_version: 13
 implements:
-  - cmd/staleness-check/discovery_test.go
+  - internal/discovery/discovery_test.go
 ---
 
-# TEST/tech_design/discovery
+# TEST/tech_design/internal/discovery
 
 ## Context
 

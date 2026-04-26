@@ -1,11 +1,11 @@
 ---
-version: 4
-parent_version: 7
+version: 7
+parent_version: 10
 implements:
-  - cmd/staleness-check/specstaleness_test.go
+  - internal/specstaleness/specstaleness_test.go
 ---
 
-# TEST/tech_design/spec_staleness
+# TEST/tech_design/internal/spec_staleness
 
 ## Context
 

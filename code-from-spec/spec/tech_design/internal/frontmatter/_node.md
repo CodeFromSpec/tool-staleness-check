@@ -1,16 +1,16 @@
 ---
-version: 9
-parent_version: 11
+version: 10
+parent_version: 1
 depends_on:
   - path: ROOT/domain/specifications
     version: 4
   - path: ROOT/domain/name_verification
     version: 3
 implements:
-  - cmd/staleness-check/frontmatter.go
+  - internal/frontmatter/frontmatter.go
 ---
 
-# ROOT/tech_design/frontmatter
+# ROOT/tech_design/internal/frontmatter
 
 ## Intent
 
@@ -18,6 +18,10 @@ Reads and parses the YAML frontmatter and title from node
 files.
 
 ## Contracts
+
+### Package
+
+`frontmatter`
 
 ### Parsing
 

@@ -1,16 +1,16 @@
 ---
-version: 10
-parent_version: 11
+version: 13
+parent_version: 1
 depends_on:
   - path: ROOT/domain/specifications
     version: 4
-  - path: ROOT/tech_design/logical_names
-    version: 6
+  - path: ROOT/tech_design/internal/logical_names
+    version: 8
 implements:
-  - cmd/staleness-check/discovery.go
+  - internal/discovery/discovery.go
 ---
 
-# ROOT/tech_design/discovery
+# ROOT/tech_design/internal/discovery
 
 ## Intent
 
@@ -18,6 +18,10 @@ Walks the filesystem to discover all spec nodes and test
 nodes.
 
 ## Contracts
+
+### Package
+
+`discovery`
 
 ### Discovery rules
 

@@ -1,14 +1,14 @@
 ---
-version: 9
-parent_version: 11
+version: 10
+parent_version: 1
 depends_on:
   - path: ROOT/domain/specifications
     version: 4
 implements:
-  - cmd/staleness-check/speccomment.go
+  - internal/speccomment/speccomment.go
 ---
 
-# ROOT/tech_design/spec_comment
+# ROOT/tech_design/internal/spec_comment
 
 ## Intent
 
@@ -16,6 +16,10 @@ Extracts the spec reference comment from generated source
 files for code staleness verification.
 
 ## Contracts
+
+### Package
+
+`speccomment`
 
 ### Pattern
 

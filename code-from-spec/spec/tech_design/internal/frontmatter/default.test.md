@@ -1,11 +1,11 @@
 ---
-version: 3
-parent_version: 8
+version: 5
+parent_version: 10
 implements:
-  - cmd/staleness-check/frontmatter_test.go
+  - internal/frontmatter/frontmatter_test.go
 ---
 
-# TEST/tech_design/frontmatter
+# TEST/tech_design/internal/frontmatter
 
 ## Context
 

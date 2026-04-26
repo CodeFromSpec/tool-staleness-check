@@ -1,11 +1,11 @@
 ---
-version: 5
-parent_version: 6
+version: 7
+parent_version: 8
 implements:
-  - cmd/staleness-check/logicalnames_test.go
+  - internal/logicalnames/logicalnames_test.go
 ---
 
-# TEST/tech_design/logical_names
+# TEST/tech_design/internal/logical_names
 
 ## Context
 

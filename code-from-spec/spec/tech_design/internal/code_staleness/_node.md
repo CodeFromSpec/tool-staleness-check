@@ -1,18 +1,18 @@
 ---
-version: 6
-parent_version: 11
+version: 9
+parent_version: 1
 depends_on:
-  - path: ROOT/domain/staleness
-    version: 7
   - path: ROOT/domain/output
     version: 7
-  - path: ROOT/tech_design/logical_names
-    version: 6
+  - path: ROOT/domain/staleness
+    version: 7
+  - path: ROOT/tech_design/internal/logical_names
+    version: 8
 implements:
-  - cmd/staleness-check/codestaleness.go
+  - internal/codestaleness/codestaleness.go
 ---
 
-# ROOT/tech_design/code_staleness
+# ROOT/tech_design/internal/code_staleness
 
 ## Intent
 
@@ -21,6 +21,10 @@ invokes this function once per discovered node and
 collects the results.
 
 ## Contracts
+
+### Package
+
+`codestaleness`
 
 ### Interface
 

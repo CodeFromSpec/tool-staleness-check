@@ -1,14 +1,14 @@
 ---
-version: 7
-parent_version: 11
+version: 8
+parent_version: 1
 depends_on:
   - path: ROOT/domain/specifications
     version: 4
 implements:
-  - cmd/staleness-check/logicalnames.go
+  - internal/logicalnames/logicalnames.go
 ---
 
-# ROOT/tech_design/logical_names
+# ROOT/tech_design/internal/logical_names
 
 ## Intent
 
@@ -17,6 +17,10 @@ paths, and logical name comparison. Used by discovery,
 spec staleness, and code staleness modules.
 
 ## Contracts
+
+### Package
+
+`logicalnames`
 
 ### Interface
 
