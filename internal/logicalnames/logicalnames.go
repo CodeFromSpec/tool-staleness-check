@@ -1,4 +1,15 @@
-// code-from-spec: ROOT/tech_design/internal/logical_names@v10
+// code-from-spec: ROOT/tech_design/internal/logical_names@v11
+// Package logicalnames centralizes conversion between logical names and file
+// paths, and logical name comparison. Used by the discovery, spec staleness,
+// and code staleness modules.
+//
+// Logical name namespaces:
+//   - ROOT/* — spec nodes (e.g., ROOT, ROOT/x, ROOT/x/y)
+//   - TEST/* — test nodes (e.g., TEST, TEST/x, TEST/x(name))
+//
+// File-path roots:
+//   - Spec nodes live under code-from-spec/ as _node.md files.
+//   - Test nodes live under code-from-spec/ as <name>.test.md files.
 package logicalnames
 
 import (
@@ -6,119 +17,158 @@ import (
 	"strings"
 )
 
-// specDir is the root directory where all spec files live.
+// specDir is the root directory where all spec files live, relative to the
+// project root.
 const specDir = "code-from-spec"
 
-// nodeFile is the filename for spec nodes.
+// nodeFile is the filename used for spec nodes inside their directory.
 const nodeFile = "_node.md"
 
-// testSuffix is the extension for test node files.
+// testSuffix is the file extension shared by all test node files.
 const testSuffix = ".test.md"
 
-// LogicalNameFromPath derives the logical name from a file path
-// relative to the project root. Returns ("", false) if the path
-// does not match any known pattern.
+// LogicalNameFromPath derives the logical name from a file path that is
+// relative to the project root. Returns ("", false) if the path does not
+// match any known pattern.
 //
-// Rules:
-//   - code-from-spec/_node.md                    → ROOT
-//   - code-from-spec/<path>/_node.md              → ROOT/<path>
-//   - code-from-spec/default.test.md              → TEST
-//   - code-from-spec/<path>/default.test.md       → TEST/<path>
-//   - code-from-spec/<path>/<name>.test.md        → TEST/<path>(<name>)
+// Mapping table (examples):
+//
+//	code-from-spec/_node.md                 → ROOT
+//	code-from-spec/x/_node.md               → ROOT/x
+//	code-from-spec/x/y/_node.md             → ROOT/x/y
+//	code-from-spec/default.test.md          → TEST
+//	code-from-spec/x/default.test.md        → TEST/x
+//	code-from-spec/x/name.test.md           → TEST/x(name)
 func LogicalNameFromPath(filePath string) (string, bool) {
-	// Normalize to forward slashes for consistent handling.
-	normalized := filepath(filePath)
+	// Normalize path separators to forward slashes so that Windows paths
+	// (using backslashes) are handled consistently.
+	normalized := normalizeSeparators(filePath)
 
-	// The path must start with the spec directory.
-	if !strings.HasPrefix(normalized, specDir+"/") {
+	// The path must start with the spec directory followed by a separator.
+	prefix := specDir + "/"
+	if !strings.HasPrefix(normalized, prefix) {
 		return "", false
 	}
 
-	// Strip the spec directory prefix.
-	rest := normalized[len(specDir)+1:]
+	// Strip the "code-from-spec/" prefix to get the remainder.
+	rest := normalized[len(prefix):]
 
-	// Check if this is a _node.md file (spec node).
+	// --- Spec nodes (_node.md) ---
+
+	// Root spec node: code-from-spec/_node.md
 	if rest == nodeFile {
-		// Root node.
 		return "ROOT", true
 	}
-	if strings.HasSuffix(rest, "/"+nodeFile) {
-		// Non-root spec node: strip the trailing /_node.md to get the path.
-		p := rest[:len(rest)-len("/"+nodeFile)]
+
+	// Non-root spec node: code-from-spec/<path>/_node.md
+	nodeFileSuffix := "/" + nodeFile
+	if strings.HasSuffix(rest, nodeFileSuffix) {
+		// The path segment between the spec dir and /_node.md is the logical path.
+		p := rest[:len(rest)-len(nodeFileSuffix)]
+		if p == "" {
+			return "", false
+		}
 		return "ROOT/" + p, true
 	}
 
-	// Check if this is a test node (.test.md file).
+	// --- Test nodes (<name>.test.md) ---
+
 	if strings.HasSuffix(rest, testSuffix) {
-		// Get directory and filename.
-		dir := path.Dir(rest)
+		// Split into directory and filename using path.Dir / path.Base so that
+		// we handle single-level and multi-level paths uniformly.
+		dir := path.Dir(rest)  // "." if file is directly under specDir
 		base := path.Base(rest)
+		// Remove the .test.md suffix to obtain the test name.
 		name := base[:len(base)-len(testSuffix)]
 
 		if dir == "." {
-			// File is directly in code-from-spec/ (no subdirectory).
+			// File is directly under code-from-spec/ — no subdirectory path.
+			// Only "default" maps to a valid TEST logical name at this level.
+			// The spec shows TEST (no path) only for code-from-spec/default.test.md.
+			// There is no TEST(<name>) form without a path segment.
 			if name == "default" {
 				return "TEST", true
 			}
-			// A non-default test at the root level is not a valid pattern
-			// because TEST(<name>) with no path doesn't match the spec rules.
-			// The spec only shows TEST/<path>(<name>) — there's no TEST(<name>).
 			return "", false
 		}
 
-		// File is in a subdirectory.
+		// File is in a subdirectory — dir holds the relative path (e.g., "x/y").
 		if name == "default" {
+			// code-from-spec/<path>/default.test.md → TEST/<path>
 			return "TEST/" + dir, true
 		}
+		// code-from-spec/<path>/<name>.test.md → TEST/<path>(<name>)
 		return "TEST/" + dir + "(" + name + ")", true
 	}
 
+	// No known pattern matched.
 	return "", false
 }
 
-// PathFromLogicalName resolves a logical name to a file path
-// relative to the project root. Returns ("", false) if the input
-// does not match any known pattern.
+// PathFromLogicalName resolves a logical name to a file path relative to the
+// project root. Returns ("", false) if the input does not match any known
+// pattern.
 //
-// A subsection qualifier (e.g., ROOT/x/y(z)) is stripped before
-// resolution for ROOT names. For TEST names, the parenthesized
-// part is the test name.
+// A subsection qualifier on a ROOT name (e.g., ROOT/x/y(z)) is stripped
+// before resolution — ROOT/x/y(z) resolves to the same file as ROOT/x/y.
+// For TEST names, a parenthesized qualifier identifies the test file name:
+// TEST/x(name) → code-from-spec/x/name.test.md.
+//
+// Mapping table (examples):
+//
+//	ROOT              → code-from-spec/_node.md
+//	ROOT/x/y          → code-from-spec/x/y/_node.md
+//	ROOT/x/y(z)       → code-from-spec/x/y/_node.md  (qualifier stripped)
+//	TEST              → code-from-spec/default.test.md
+//	TEST/x            → code-from-spec/x/default.test.md
+//	TEST/x(name)      → code-from-spec/x/name.test.md
 func PathFromLogicalName(logicalName string) (string, bool) {
 	if logicalName == "" {
 		return "", false
 	}
 
 	switch {
+	// ---- ROOT namespace ----
+
 	case logicalName == "ROOT":
+		// The root spec node.
 		return specDir + "/" + nodeFile, true
 
 	case strings.HasPrefix(logicalName, "ROOT/"):
-		// Strip the ROOT/ prefix.
 		rest := logicalName[len("ROOT/"):]
 		if rest == "" {
+			// "ROOT/" with nothing after — invalid.
 			return "", false
 		}
-		// Strip subsection qualifier if present: ROOT/x/y(z) → ROOT/x/y
+		// Strip any subsection qualifier before resolving.
+		// e.g., "x/y(interface)" → "x/y"
 		rest = stripQualifier(rest)
 		if rest == "" {
 			return "", false
 		}
 		return specDir + "/" + rest + "/" + nodeFile, true
 
+	// ---- TEST namespace ----
+
 	case logicalName == "TEST":
+		// The canonical test node at the root level.
 		return specDir + "/default" + testSuffix, true
 
 	case strings.HasPrefix(logicalName, "TEST/"):
 		rest := logicalName[len("TEST/"):]
 		if rest == "" {
+			// "TEST/" with nothing after — invalid.
 			return "", false
 		}
-		// Check for a test name qualifier: TEST/<path>(<name>)
+		// Separate the path from the optional test-name qualifier.
+		// e.g., "x/y(edge_cases)" → p="x/y", name="edge_cases"
+		//        "x/y"            → p="x/y", name=""
 		p, name := parseTestQualifier(rest)
 		if name == "" {
-			// No qualifier — this is the default test.
+			// No qualifier — refers to the default test file.
 			return specDir + "/" + p + "/default" + testSuffix, true
 		}
+		// Named test file.
 		return specDir + "/" + p + "/" + name + testSuffix, true
 
 	default:
@@ -128,54 +178,73 @@ func PathFromLogicalName(logicalName string) (string, bool) {
 
 // LogicalNamesMatch compares two logical names for equivalence.
 //
-// Special rules:
-//   - TEST/x and TEST/x(default) are equivalent.
-//   - ROOT/x(qualifier) and ROOT/x are equivalent (subsection
-//     qualifiers on ROOT names are ignored).
+// Two special equivalence rules apply:
+//  1. TEST/x and TEST/x(default) are the same — the bare form is an alias
+//     for the explicit (default) form. Named variants like TEST/x(edge_cases)
+//     only match themselves.
+//  2. ROOT/x(qualifier) and ROOT/x are the same — subsection qualifiers on
+//     ROOT names are ignored for matching purposes.
+//
+// All other comparisons are exact string equality.
 func LogicalNamesMatch(a, b string) bool {
 	return normalizeLogicalName(a) == normalizeLogicalName(b)
 }
 
 // HasParent determines whether a logical name has a parent node.
-// Returns (hasParent, ok) where ok indicates whether the input
-// is a valid logical name.
+// Returns (hasParent, ok) where ok indicates whether the input is a valid
+// logical name at all.
 //
-//   - ROOT           → (false, true)
-//   - ROOT/<path>    → (true, true)
-//   - TEST (and all TEST variants) → (true, true)
-//   - anything else  → (false, false)
+// Rules:
+//   - ROOT           → (false, true)   — the root has no parent
+//   - ROOT/<path>    → (true,  true)   — all other spec nodes have a parent
+//   - TEST           → (true,  true)   — parent is ROOT
+//   - TEST/<path>    → (true,  true)   — parent is the corresponding ROOT node
+//   - TEST/<path>(n) → (true,  true)   — same
+//   - ""             → (false, false)  — not a valid logical name
+//   - anything else  → (false, false)  — not a valid logical name
 func HasParent(logicalName string) (hasParent, ok bool) {
 	switch {
 	case logicalName == "ROOT":
+		// The root spec node has no parent by definition.
 		return false, true
+
 	case strings.HasPrefix(logicalName, "ROOT/"):
 		rest := logicalName[len("ROOT/"):]
 		if rest == "" {
+			// "ROOT/" alone is invalid.
 			return false, false
 		}
 		return true, true
+
 	case logicalName == "TEST":
+		// TEST's parent/subject is ROOT.
 		return true, true
+
 	case strings.HasPrefix(logicalName, "TEST/"):
 		rest := logicalName[len("TEST/"):]
 		if rest == "" {
+			// "TEST/" alone is invalid.
 			return false, false
 		}
 		return true, true
+
 	default:
+		// Empty string or any unrecognized form.
 		return false, false
 	}
 }
 
-// ParentLogicalName derives the parent's logical name from a
-// node's logical name. For test nodes, returns the subject's
-// logical name. Returns ("", false) if the node has no parent.
+// ParentLogicalName derives the parent's logical name from a node's logical
+// name. For test nodes, this returns the subject's logical name (the ROOT
+// node being tested). Returns ("", false) if the node has no parent.
 //
-//   - ROOT/x         → ROOT
-//   - ROOT/x/y       → ROOT/x
-//   - TEST            → ROOT
-//   - TEST/x          → ROOT/x
-//   - TEST/x(name)    → ROOT/x
+// Rules:
+//   - ROOT           → ("", false)       — no parent
+//   - ROOT/x         → ("ROOT", true)
+//   - ROOT/x/y       → ("ROOT/x", true)
+//   - TEST           → ("ROOT", true)
+//   - TEST/x         → ("ROOT/x", true)
+//   - TEST/x(name)   → ("ROOT/x", true)
 func ParentLogicalName(logicalName string) (string, bool) {
 	switch {
 	case logicalName == "ROOT":
@@ -187,18 +256,22 @@ func ParentLogicalName(logicalName string) (string, bool) {
 		if rest == "" {
 			return "", false
 		}
-		// Strip any subsection qualifier first.
+		// Strip any subsection qualifier before computing the parent.
+		// e.g., "x/y(z)" → "x/y"
 		rest = stripQualifier(rest)
-		// Find the last slash to determine the parent path.
+
+		// Find the last slash to identify the boundary between parent path and
+		// this node's segment.
 		lastSlash := strings.LastIndex(rest, "/")
 		if lastSlash == -1 {
-			// Only one segment — parent is ROOT.
+			// Single segment (e.g., ROOT/x) — parent is ROOT.
 			return "ROOT", true
 		}
+		// Multiple segments (e.g., ROOT/x/y) — parent is ROOT/<prefix>.
 		return "ROOT/" + rest[:lastSlash], true
 
 	case logicalName == "TEST":
-		// Subject of TEST is ROOT.
+		// The subject of the root-level test node is ROOT.
 		return "ROOT", true
 
 	case strings.HasPrefix(logicalName, "TEST/"):
@@ -206,7 +279,10 @@ func ParentLogicalName(logicalName string) (string, bool) {
 		if rest == "" {
 			return "", false
 		}
-		// Strip test name qualifier: TEST/<path>(<name>) → <path>
+		// For test nodes, strip the test-name qualifier to get the path, then
+		// map that path back into the ROOT namespace.
+		// e.g., "x/y(name)" → path="x/y" → "ROOT/x/y"
+		//        "x/y"       → path="x/y" → "ROOT/x/y"
 		p, _ := parseTestQualifier(rest)
 		return "ROOT/" + p, true
 
@@ -215,63 +291,92 @@ func ParentLogicalName(logicalName string) (string, bool) {
 	}
 }
 
-// --- Internal helpers ---
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
 
-// filepath normalizes a file path to use forward slashes.
-func filepath(p string) string {
+// normalizeSeparators converts backslashes to forward slashes so that paths
+// from Windows file systems are handled uniformly.
+func normalizeSeparators(p string) string {
 	return strings.ReplaceAll(p, "\\", "/")
 }
 
-// stripQualifier removes a trailing parenthesized qualifier from
-// a path segment. E.g., "x/y(z)" → "x/y".
-// If no qualifier is present, returns the input unchanged.
+// stripQualifier removes a trailing parenthesized qualifier from a path
+// segment. For example, "x/y(interface)" becomes "x/y". If the string does
+// not end with a closing parenthesis or has no opening parenthesis, it is
+// returned unchanged.
+//
+// Note: We use LastIndex so that only the final parenthesized group is
+// stripped, leaving any parentheses embedded in path segments intact
+// (although the spec does not currently use such forms).
 func stripQualifier(s string) string {
-	idx := strings.LastIndex(s, "(")
-	if idx == -1 {
+	// Must end with ")" to be a valid qualifier.
+	if !strings.HasSuffix(s, ")") {
 		return s
 	}
-	if !strings.HasSuffix(s, ")") {
+	idx := strings.LastIndex(s, "(")
+	if idx == -1 {
 		return s
 	}
 	return s[:idx]
 }
 
-// parseTestQualifier splits "path(name)" into ("path", "name").
-// If there is no qualifier, returns (input, "").
-func parseTestQualifier(s string) (string, string) {
+// parseTestQualifier splits a TEST path remainder into (path, name).
+// The name is the content inside the final parentheses, e.g.:
+//
+//	"x/y(edge_cases)" → ("x/y", "edge_cases")
+//	"x/y"             → ("x/y", "")
+//
+// If no qualifier is present, name is returned as an empty string.
+func parseTestQualifier(s string) (p, name string) {
+	// Must end with ")" to have a qualifier.
+	if !strings.HasSuffix(s, ")") {
+		return s, ""
+	}
 	idx := strings.LastIndex(s, "(")
 	if idx == -1 {
 		return s, ""
 	}
-	if !strings.HasSuffix(s, ")") {
-		return s, ""
-	}
-	p := s[:idx]
-	name := s[idx+1 : len(s)-1]
+	p = s[:idx]
+	name = s[idx+1 : len(s)-1]
 	return p, name
 }
 
-// normalizeLogicalName produces a canonical form for comparison.
-//   - ROOT names: strip subsection qualifiers.
-//   - TEST names: expand bare TEST/<path> to TEST/<path>(default).
+// normalizeLogicalName produces a canonical form of a logical name used
+// internally by LogicalNamesMatch:
+//
+//   - ROOT names: subsection qualifiers are stripped.
+//   - TEST names: bare TEST/<path> is expanded to TEST/<path>(default),
+//     and the bare TEST is expanded to TEST(default).
+//   - All other names are returned unchanged.
+//
+// This ensures that the two equivalence rules in LogicalNamesMatch are
+// implemented through simple string equality on normalized forms.
 func normalizeLogicalName(name string) string {
 	switch {
 	case name == "ROOT":
 		return name
+
 	case strings.HasPrefix(name, "ROOT/"):
 		rest := name[len("ROOT/"):]
+		// Strip any subsection qualifier — ROOT/x(z) ≡ ROOT/x.
 		return "ROOT/" + stripQualifier(rest)
+
 	case name == "TEST":
-		// TEST is an alias for TEST with default — but there's no path,
-		// so we just keep it as "TEST(default)" for normalization.
+		// TEST is an alias for the default test at the root level.
+		// Normalize to a sentinel so it only matches itself (and its explicit
+		// default alias, should one ever be constructed).
 		return "TEST(default)"
+
 	case strings.HasPrefix(name, "TEST/"):
 		rest := name[len("TEST/"):]
 		p, testName := parseTestQualifier(rest)
 		if testName == "" {
+			// Bare form — expand to explicit default.
 			testName = "default"
 		}
 		return "TEST/" + p + "(" + testName + ")"
+
 	default:
 		return name
 	}

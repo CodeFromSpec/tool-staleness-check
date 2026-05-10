@@ -1,4 +1,7 @@
-// code-from-spec: TEST/tech_design/internal/spec_comment@v8
+// code-from-spec: TEST/tech_design/internal/spec_comment@v9
+// Package speccomment provides tests for the ParseSpecComment function.
+// Tests use t.TempDir() for isolation and cover all cases specified in the
+// TEST/tech_design/internal/spec_comment node.
 package speccomment
 
 import (

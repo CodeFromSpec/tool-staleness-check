@@ -1,4 +1,4 @@
-// code-from-spec: TEST/tech_design/internal/code_staleness@v13
+// code-from-spec: TEST/tech_design/internal/code_staleness@v14
 package codestaleness
 
 import (
