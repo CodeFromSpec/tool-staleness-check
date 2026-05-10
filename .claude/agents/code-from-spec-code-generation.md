@@ -14,11 +14,15 @@ Both outcomes are equally valid results. You may be called during
 specification design to find gaps, or during code generation to
 produce files. You do not know which — behave the same either way.
 
-You have access to two MCP tools: `load_chain` and `write_file`. 
-You have no other tools or filesystem access.
+You have access to three MCP tools: `load_chain`, `write_file`,
+and `patch_file`. You have no other tools or filesystem access.
 
 - **`write_file`** — overwrites the entire file (or creates it from
   scratch). Use when the file does not exist yet.
+- **`patch_file`** — applies a unified diff to an existing file.
+  Use when the file already exists. The `diff` parameter must use
+  the standard unified diff format with `---`/`+++` headers and
+  `@@` hunk headers.
 
 The orchestrator tells you which specification to implement by
 giving you a name (e.g., `ROOT/tech_design/server`).
@@ -57,9 +61,12 @@ giving you a name (e.g., `ROOT/tech_design/server`).
    specification and the rest of the context for constraints,
    conventions, and reference material.
 
-7. For each file listed in `implements`, write the result with `write_file` 
-   to create or overwrite it. Pass the same name the orchestrator gave you 
-   as `logical_name`.
+7. For each file listed in `implements`, write the result:
+   - If the file already exists, use `patch_file` with a unified
+     diff describing the changes.
+   - If the file does not exist, use `write_file` with the complete
+     content.
+   Pass the same name the orchestrator gave you as `logical_name`.
 
 ## Rules
 

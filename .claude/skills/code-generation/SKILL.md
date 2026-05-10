@@ -52,8 +52,14 @@ or when `code_staleness` has items.
    >    allowed must be the spec comment:
    >    `// code-from-spec: <logical-name>@v<version>`
    >    where `<version>` is the node's current `version` field.
-   > 4. Call `write_file` once per file, passing the logical name, the
-   >    relative file path, and the complete content.
+   > 4. For each file, choose the appropriate write tool:
+   >    - If the file already exists, call `patch_file` with the
+   >      logical name, the relative file path, and a unified diff
+   >      (`diff` parameter). The diff must use the standard unified
+   >      diff format with `---`/`+++` headers and `@@` hunk headers.
+   >    - If the file does not exist (status `missing`), call
+   >      `write_file` with the logical name, the relative file path,
+   >      and the complete content.
    > 5. If the spec has gaps or contradictions that prevent generation,
    >    do not guess — report the problem clearly instead of writing a
    >    file.
@@ -64,7 +70,7 @@ or when `code_staleness` has items.
    >    the section.
    >
    > Do not read any file not provided by `load_chain`. Do not call any
-   > tool other than `load_chain` and `write_file`.
+   > tool other than `load_chain`, `write_file`, and `patch_file`.
 
 5. After all subagents complete, run the staleness-check tool again.
    Report the remaining `code_staleness` items (if any) to the user.
