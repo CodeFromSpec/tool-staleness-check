@@ -1,7 +1,7 @@
 ---
 name: code-from-spec-code-generation
 description: Use this agent when generating or regenerating source files from Code from Spec nodes.
-tools: "mcp__subagent-mcp__load_chain, mcp__subagent-mcp__write_file"
+tools: "mcp__subagent-mcp__load_chain, mcp__subagent-mcp__write_file, mcp__subagent-mcp__patch_file"
 model: "claude-sonnet-4-6[1m]"
 effort: medium
 ---
