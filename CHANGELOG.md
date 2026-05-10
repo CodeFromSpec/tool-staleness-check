@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.0](https://github.com/CodeFromSpec/tool-staleness-check/compare/v2.0.0...v2.1.0) (2026-05-10)
+
+
+### Features
+
+* migrate spec tree to Code from Spec v2 ([#14](https://github.com/CodeFromSpec/tool-staleness-check/issues/14)) ([70a26b6](https://github.com/CodeFromSpec/tool-staleness-check/commit/70a26b6d1c8a5e4e7abd4970d92b8b4087ee81b2))
+
+
+### Bug Fixes
+
+* update README for v2 restructure and versioning scheme ([#12](https://github.com/CodeFromSpec/tool-staleness-check/issues/12)) ([f6917e3](https://github.com/CodeFromSpec/tool-staleness-check/commit/f6917e316b41fb50cc7373e47d711fa3147f0560))
+
 ## [2.0.0](https://github.com/CodeFromSpec/tool-staleness-check/compare/v1.0.2...v2.0.0) (2026-04-26)
 
 
