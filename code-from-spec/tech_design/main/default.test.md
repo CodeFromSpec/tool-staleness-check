@@ -1,6 +1,6 @@
 ---
 version: 11
-parent_version: 19
+subject_version: 19
 implements:
   - cmd/staleness-check/main_test.go
 ---

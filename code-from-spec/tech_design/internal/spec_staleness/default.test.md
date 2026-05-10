@@ -1,6 +1,6 @@
 ---
 version: 14
-parent_version: 13
+subject_version: 13
 depends_on:
   - path: ROOT/tech_design/internal/discovery
     version: 16
