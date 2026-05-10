@@ -1,11 +1,9 @@
 ---
-version: 3
-parent_version: 14
+version: 4
+parent_version: 15
 ---
 
 # ROOT/tech_design/internal
-
-## Intent
 
 Leaf nodes under this subtree generate files into
 `internal/<package>/`.

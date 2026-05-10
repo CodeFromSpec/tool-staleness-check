@@ -1,14 +1,14 @@
 ---
-version: 14
-parent_version: 9
+version: 15
+parent_version: 10
 ---
 
 # ROOT/tech_design
 
-## Intent
-
 Technical design decisions for implementing the staleness
 verification tool in Go.
+
+# Public
 
 ## Context
 
@@ -16,30 +16,28 @@ This is a single-purpose CLI tool — no server, no library
 API, no plugin system. The design prioritizes simplicity,
 correctness, and fast execution.
 
-## Contracts
-
-### Language
+## Language
 
 Go (minimum 1.22).
 
-### Go module
+## Go module
 
 The module path is:
 `github.com/CodeFromSpec/tool-staleness-check/v2`
 
-### Dependencies
+## Dependencies
 
 - Standard library only, plus `github.com/goccy/go-yaml` for YAML
   parsing and output.
 - No test framework beyond the standard `testing` package.
 
-### Error handling
+## Error handling
 
-- **Operational errors** (cannot read `spec/` directory,
-  permission denied, invalid working directory) — print
-  to stderr, exit 2. Error messages must be clear and
-  actionable — they should tell the user what went wrong
-  and how to fix it.
+- **Operational errors** (cannot read `code-from-spec/`
+  directory, permission denied, invalid working
+  directory) — print to stderr, exit 2. Error messages
+  must be clear and actionable — they should tell the
+  user what went wrong and how to fix it.
 - **Node-level problems** (missing file, bad frontmatter,
   unresolvable parent) — captured as a status in the
   result, not as an operational error. The tool continues

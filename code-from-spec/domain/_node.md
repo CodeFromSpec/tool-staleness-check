@@ -1,16 +1,16 @@
 ---
-version: 10
-parent_version: 9
+version: 12
+parent_version: 10
 ---
 
 # ROOT/domain
-
-## Intent
 
 Defines the domain rules for the staleness verification
 tool. The tool performs both spec staleness and code
 staleness verification as defined by the Code from Spec
 methodology.
+
+# Public
 
 ## Context
 
@@ -35,9 +35,7 @@ A Code from Spec project contains:
 
 ```
 project_root/
-  code-from-spec/
-    spec/       ← spec tree
-    external/   ← external dependencies
+  code-from-spec/       ← spec tree
 ```
 
 ### Spec vs. code staleness

@@ -1,14 +1,14 @@
 ---
-version: 5
-parent_version: 14
+version: 6
+parent_version: 15
 ---
 
 # ROOT/tech_design/go_module
 
-## Intent
-
 Documents the Go module configuration (`go.mod`) and how
 it is managed.
+
+# Public
 
 ## Constraints
 

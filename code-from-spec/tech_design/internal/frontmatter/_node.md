@@ -1,29 +1,27 @@
 ---
-version: 12
-parent_version: 3
+version: 13
+parent_version: 4
 depends_on:
   - path: ROOT/domain/specifications
-    version: 4
+    version: 6
   - path: ROOT/domain/name_verification
-    version: 3
+    version: 5
 implements:
   - internal/frontmatter/frontmatter.go
 ---
 
 # ROOT/tech_design/internal/frontmatter
 
-## Intent
-
 Reads and parses the YAML frontmatter and title from node
 files.
 
-## Contracts
+# Public
 
-### Package
+## Package
 
 `frontmatter`
 
-### Parsing
+## Parsing
 
 The frontmatter is the YAML block between the first `---`
 and the second `---` at the top of the file. Everything
@@ -41,7 +39,7 @@ All fields are optional at the parsing level — validation
 of required fields happens during staleness verification.
 Unknown fields are ignored.
 
-### Title extraction
+## Title extraction
 
 The title is the first non-empty line after the
 frontmatter closing `---`. It is expected to start with
@@ -53,7 +51,7 @@ If the title line is missing or does not start with `# `,
 the title is stored as empty string — the caller decides
 how to handle it.
 
-### Interface
+## Interface
 
 ```go
 type DependsOn struct {
@@ -79,7 +77,7 @@ func ParseFrontmatter(filePath string) (
 frontmatter and title, and returns the result. It does
 not cache — caching is the caller's responsibility.
 
-### Efficiency
+## Efficiency
 
 The parser must not read the entire file into memory.
 It reads line by line, extracts the frontmatter and
@@ -90,7 +88,7 @@ only the final `Frontmatter` struct is retained. This
 matters because spec files can have long bodies that
 are irrelevant to staleness verification.
 
-### Error handling
+## Error handling
 
 Errors must wrap the underlying error with a descriptive
 message:

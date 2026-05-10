@@ -1,36 +1,34 @@
 ---
-version: 15
-parent_version: 3
+version: 16
+parent_version: 4
 depends_on:
   - path: ROOT/domain/output
-    version: 7
+    version: 9
   - path: ROOT/domain/staleness
-    version: 7
+    version: 9
   - path: ROOT/tech_design/internal/logical_names
-    version: 10
+    version: 11
   - path: ROOT/tech_design/internal/spec_comment
-    version: 13
+    version: 14
   - path: ROOT/tech_design/internal/spec_staleness
-    version: 13
+    version: 14
 implements:
   - internal/codestaleness/codestaleness.go
 ---
 
 # ROOT/tech_design/internal/code_staleness
 
-## Intent
-
 Verifies code staleness for a single node. The caller
 invokes this function once per discovered node and
 collects the results.
 
-## Contracts
+# Public
 
-### Package
+## Package
 
 `codestaleness`
 
-### Interface
+## Interface
 
 ```go
 func CheckCodeStaleness(
@@ -51,7 +49,7 @@ Every discovered node has an entry in the cache: a valid
 parsing failed. If a file path has no entry in the
 cache, the file does not exist.
 
-### Algorithm
+## Algorithm
 
 Check in this order. Steps 1-3 are blocking — return
 immediately with a single result. Step 4 produces one

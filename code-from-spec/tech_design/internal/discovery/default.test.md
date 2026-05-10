@@ -1,6 +1,6 @@
 ---
-version: 10
-subject_version: 16
+version: 11
+subject_version: 17
 implements:
   - internal/discovery/discovery_test.go
 ---

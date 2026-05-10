@@ -1,29 +1,27 @@
 ---
-version: 16
-parent_version: 3
+version: 17
+parent_version: 4
 depends_on:
   - path: ROOT/domain/specifications
-    version: 4
+    version: 6
   - path: ROOT/tech_design/internal/logical_names
-    version: 10
+    version: 11
 implements:
   - internal/discovery/discovery.go
 ---
 
 # ROOT/tech_design/internal/discovery
 
-## Intent
-
 Walks the filesystem to discover all spec nodes and test
 nodes.
 
-## Contracts
+# Public
 
-### Package
+## Package
 
 `discovery`
 
-### Discovery rules
+## Discovery rules
 
 Walk `code-from-spec/` recursively:
 - Every `_node.md` file produces a spec node.
@@ -34,7 +32,7 @@ For each discovered file, use `LogicalNameFromPath` from
 name. Paths passed to `LogicalNameFromPath` are relative
 to the project root.
 
-### Interface
+## Interface
 
 ```go
 type DiscoveredNode struct {
@@ -53,7 +51,7 @@ All lists are sorted alphabetically by `LogicalName`.
 `FilePath` values are relative to the project root
 (e.g., `code-from-spec/domain/config/_node.md`).
 
-### Error handling
+## Error handling
 
 Errors returned by `DiscoverNodes` must wrap the
 underlying error with a descriptive message so the

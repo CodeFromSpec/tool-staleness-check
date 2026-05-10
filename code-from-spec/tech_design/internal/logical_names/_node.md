@@ -1,28 +1,26 @@
 ---
-version: 10
-parent_version: 3
+version: 11
+parent_version: 4
 depends_on:
   - path: ROOT/domain/specifications
-    version: 4
+    version: 6
 implements:
   - internal/logicalnames/logicalnames.go
 ---
 
 # ROOT/tech_design/internal/logical_names
 
-## Intent
-
 Centralizes conversion between logical names and file
 paths, and logical name comparison. Used by discovery,
 spec staleness, and code staleness modules.
 
-## Contracts
+# Public
 
-### Package
+## Package
 
 `logicalnames`
 
-### Interface
+## Interface
 
 ```go
 func LogicalNameFromPath(filePath string) (string, bool)
@@ -32,7 +30,7 @@ func HasParent(logicalName string) (hasParent, ok bool)
 func ParentLogicalName(logicalName string) (string, bool)
 ```
 
-### LogicalNameFromPath
+## LogicalNameFromPath
 
 Derives the logical name from a file path relative to
 the project root.
@@ -56,7 +54,7 @@ Rules:
 Returns `("", false)` if the path does not match any
 known pattern.
 
-### PathFromLogicalName
+## PathFromLogicalName
 
 Resolves a logical name to a file path relative to the
 project root.
@@ -84,7 +82,7 @@ Rules:
 Returns `("", false)` if the input does not match any
 known pattern.
 
-### LogicalNamesMatch
+## LogicalNamesMatch
 
 Compares two logical names for equivalence. Two
 special rules apply:
@@ -98,7 +96,7 @@ special rules apply:
 
 All other comparisons are exact string equality.
 
-### HasParent
+## HasParent
 
 Determines whether a logical name has a parent node.
 Returns `(hasParent, ok)` where `ok` indicates whether
@@ -120,7 +118,7 @@ Rules:
   has parent (parent is always in the ROOT namespace)
 - Anything else → not a valid logical name
 
-### ParentLogicalName
+## ParentLogicalName
 
 Derives the parent's logical name from a node's logical
 name. For test nodes, returns the subject's logical name.
@@ -142,7 +140,7 @@ Rules:
 - `TEST/<path>` → `ROOT/<path>`
 - `TEST/<path>(<name>)` → `ROOT/<path>`
 
-### Error handling
+## Error handling
 
 These are pure functions operating on strings. They do
 not perform I/O or return errors.

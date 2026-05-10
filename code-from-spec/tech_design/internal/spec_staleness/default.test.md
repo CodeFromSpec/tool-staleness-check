@@ -1,11 +1,11 @@
 ---
-version: 14
-subject_version: 13
+version: 15
+subject_version: 14
 depends_on:
   - path: ROOT/tech_design/internal/discovery
-    version: 16
+    version: 17
   - path: ROOT/tech_design/internal/frontmatter
-    version: 12
+    version: 13
 implements:
   - internal/specstaleness/specstaleness_test.go
 ---

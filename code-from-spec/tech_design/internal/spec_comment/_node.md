@@ -1,27 +1,25 @@
 ---
-version: 13
-parent_version: 3
+version: 14
+parent_version: 4
 depends_on:
   - path: ROOT/domain/specifications
-    version: 4
+    version: 6
 implements:
   - internal/speccomment/speccomment.go
 ---
 
 # ROOT/tech_design/internal/spec_comment
 
-## Intent
-
 Extracts the spec reference comment from generated source
 files for code staleness verification.
 
-## Contracts
+# Public
 
-### Package
+## Package
 
 `speccomment`
 
-### Pattern
+## Pattern
 
 The spec comment contains the substring:
 
@@ -34,14 +32,14 @@ of the language. It scans each line for the pattern
 regardless of what precedes or follows it. This makes it
 language-agnostic — any comment syntax works.
 
-### Detection
+## Detection
 
 Read the file line by line from the top. For each line,
 look for the substring `code-from-spec: `. Stop reading
 as soon as a match is found. If the entire file is read
 without a match, report that no spec comment was found.
 
-### Extraction
+## Extraction
 
 Once a line containing `code-from-spec: ` is found,
 extract the logical name and version:
@@ -57,7 +55,7 @@ extract the logical name and version:
 If `@v` is not found, the version is not a valid integer,
 or the logical name is empty, the comment is malformed.
 
-### Interface
+## Interface
 
 ```go
 var ErrNoSpecComment = errors.New("no spec comment found")
@@ -77,13 +75,13 @@ func ParseSpecComment(filePath string) (
 success. On failure, it returns an error describing what
 went wrong.
 
-### Efficiency
+## Efficiency
 
 The parser reads line by line and retains nothing from
 previous lines. It stops as soon as the pattern is found.
 No intermediate state is accumulated.
 
-### Error handling
+## Error handling
 
 - I/O failure: return `fmt.Errorf("error reading <path>: %w", err)`
 - No spec comment found: return `fmt.Errorf("no spec comment found in <path>: %w", ErrNoSpecComment)`

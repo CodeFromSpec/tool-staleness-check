@@ -1,34 +1,32 @@
 ---
-version: 13
-parent_version: 3
+version: 14
+parent_version: 4
 depends_on:
   - path: ROOT/domain/name_verification
-    version: 3
+    version: 5
   - path: ROOT/domain/output
-    version: 7
+    version: 9
   - path: ROOT/domain/staleness
-    version: 7
+    version: 9
   - path: ROOT/tech_design/internal/logical_names
-    version: 10
+    version: 11
 implements:
   - internal/specstaleness/specstaleness.go
 ---
 
 # ROOT/tech_design/internal/spec_staleness
 
-## Intent
-
 Verifies spec staleness for a single node. The caller
 invokes this function once per discovered node (spec or
 test) and collects the results.
 
-## Contracts
+# Public
 
-### Package
+## Package
 
 `specstaleness`
 
-### Interface
+## Interface
 
 ```go
 type StalenessResult struct {
@@ -60,7 +58,7 @@ Spec nodes (`ROOT/` prefix) and test nodes (`TEST/`
 prefix) follow different algorithms for the
 parent/subject check. All other checks are identical.
 
-### Algorithm — spec nodes
+## Algorithm — spec nodes
 
 Check in this order. Steps 1-2 are blocking — if they
 fail, return immediately with a single result. From step
@@ -94,7 +92,7 @@ fail, return immediately with a single result. From step
      dependency.version` → collect `dependency_changed`.
 6. Return all collected results (empty slice if none).
 
-### Algorithm — test nodes
+## Algorithm — test nodes
 
 Check in this order. Steps 1-2 are blocking — if they
 fail, return immediately with a single result. From step
@@ -119,7 +117,7 @@ fail, return immediately with a single result. From step
 5. Dependency check (same as spec nodes, step 5 above).
 6. Return all collected results (empty slice if none).
 
-### Path resolution
+## Path resolution
 
 Parent, subject, and dependency logical names are resolved
 to file paths using `HasParent`, `ParentLogicalName`, and

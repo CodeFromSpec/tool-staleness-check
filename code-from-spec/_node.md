@@ -1,13 +1,13 @@
 ---
-version: 9
+version: 10
 ---
 
 # ROOT
 
-## Intent
-
 Command-line tool that performs staleness verification for
 a Code from Spec project.
+
+# Public
 
 ## Context
 
@@ -20,7 +20,7 @@ deterministic: read frontmatter, compare version numbers,
 report results. A compiled tool eliminates the cost and
 reliability problems while producing identical results.
 
-## Contracts
+## Interface
 
 The tool is invoked from the project root:
 

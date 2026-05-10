@@ -1,13 +1,13 @@
 ---
-version: 13
-subject_version: 15
+version: 14
+subject_version: 16
 depends_on:
   - path: ROOT/tech_design/internal/discovery
-    version: 16
+    version: 17
   - path: ROOT/tech_design/internal/frontmatter
-    version: 12
-  - path: ROOT/tech_design/internal/spec_comment
     version: 13
+  - path: ROOT/tech_design/internal/spec_comment
+    version: 14
 implements:
   - internal/codestaleness/codestaleness_test.go
 ---

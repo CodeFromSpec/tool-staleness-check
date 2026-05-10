@@ -1,14 +1,14 @@
 ---
-version: 3
-parent_version: 10
+version: 5
+parent_version: 12
 ---
 
 # ROOT/domain/name_verification
 
-## Intent
-
 Defines the rule for verifying that a node's title
 matches its position in the filesystem.
+
+# Public
 
 ## Context
 
@@ -22,9 +22,7 @@ path detects this case.
 This verification is specific to this tool — it is not
 part of the original Code from Spec staleness procedures.
 
-## Contracts
-
-### Title location
+## Title location
 
 The title is the first non-empty line after the
 frontmatter closing `---`. It uses the format:
@@ -38,7 +36,7 @@ Examples:
 - `# ROOT/domain/staleness`
 - `# TEST/architecture/backend/config`
 
-### Verification rule
+## Verification rule
 
 The logical name in the title must match the logical name
 derived from the node's filesystem path. If they do not

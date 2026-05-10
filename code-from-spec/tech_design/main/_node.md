@@ -1,37 +1,35 @@
 ---
-version: 19
-parent_version: 14
+version: 21
+parent_version: 15
 depends_on:
   - path: ROOT/domain/output
-    version: 7
+    version: 9
   - path: ROOT/tech_design/internal/code_staleness
-    version: 15
-  - path: ROOT/tech_design/internal/discovery
     version: 16
+  - path: ROOT/tech_design/internal/discovery
+    version: 17
   - path: ROOT/tech_design/internal/frontmatter
-    version: 12
-  - path: ROOT/tech_design/internal/spec_staleness
     version: 13
+  - path: ROOT/tech_design/internal/spec_staleness
+    version: 14
 implements:
   - cmd/staleness-check/main.go
 ---
 
 # ROOT/tech_design/main
 
-## Intent
-
 Entry point that orchestrates discovery, parsing,
 verification, and output.
 
-## Contracts
+# Public
 
-### Arguments
+## Arguments
 
 If any argument is passed (e.g., `--help`), print the
 help message below to stdout and exit 0. Otherwise
 proceed with verification.
 
-### Help message
+## Help message
 
 ```
 staleness-check — verifies spec and code staleness for a Code from Spec project.
@@ -78,7 +76,7 @@ Code staleness statuses:
 Exit codes: 0 = no problems, 1 = problems found, 2 = operational error.
 ```
 
-### Execution flow
+## Execution flow
 
 1. Call `DiscoverNodes` to find all spec nodes and test
    nodes.
@@ -101,7 +99,7 @@ Exit codes: 0 = no problems, 1 = problems found, 2 = operational error.
 7. Exit with code 0 if all sections are empty, 1 if any
    section has entries, 2 on operational error.
 
-### Output format
+## Output format
 
 YAML document to stdout. Three top-level keys in order.
 Spec and test staleness entries use `statuses` (list).
@@ -111,14 +109,14 @@ Only nodes/files with problems are included. Empty
 sections are `[]`. See `ROOT/domain/output` for full
 format specification and examples.
 
-### Operational errors
+## Operational errors
 
 If `DiscoverNodes` fails, print the error to stderr and
 exit 2. Frontmatter parse failures are not operational
 errors — they are captured as `nil` in the cache and
 surfaced as statuses during verification.
 
-### YAML serialization
+## YAML serialization
 
 Use `github.com/goccy/go-yaml` for output. The output struct
 must produce the exact field names and format prescribed

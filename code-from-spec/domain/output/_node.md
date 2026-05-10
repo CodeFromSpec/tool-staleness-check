@@ -1,18 +1,16 @@
 ---
-version: 7
-parent_version: 10
+version: 9
+parent_version: 12
 ---
 
 # ROOT/domain/output
 
-## Intent
-
 Defines the output structure and status values produced
 by the staleness verification tool.
 
-## Contracts
+# Public
 
-### Output sections
+## Output sections
 
 The tool produces three sections in order:
 
@@ -27,7 +25,7 @@ Only nodes or files with problems are included. Nodes
 and files that pass all checks are omitted. If a section
 has no problems, it is an empty list `[]`.
 
-### Spec and test staleness statuses
+## Spec and test staleness statuses
 
 | Status | Applies to | Condition |
 |---|---|---|
@@ -40,7 +38,7 @@ has no problems, it is an empty list `[]`.
 | `invalid_dependency` | Both | `depends_on` entry is malformed or referenced file cannot be found or read. |
 | `dependency_changed` | Both | `depends_on[].version != dependency.version`. |
 
-### Code staleness statuses
+## Code staleness statuses
 
 | Status | Condition |
 |---|---|
@@ -52,7 +50,7 @@ has no problems, it is an empty list `[]`.
 | `wrong_node` | Spec comment references a different node. |
 | `stale` | `node.version != spec comment version`. |
 
-### Entry format
+## Entry format
 
 Spec and test staleness entries have `node` and `statuses`.
 The `statuses` field is a list — a node may have multiple
@@ -65,7 +63,7 @@ Code staleness entries have `node`, `file`, and `status`.
 The `status` field is a single string — each file has at
 most one problem (checks are sequential prerequisites).
 
-### Examples
+## Examples
 
 All nodes up to date — all sections empty:
 
@@ -137,7 +135,7 @@ code_staleness:
     status: stale
 ```
 
-### Exit codes
+## Exit codes
 
 | Code | Meaning |
 |---|---|

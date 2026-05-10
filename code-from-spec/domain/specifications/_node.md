@@ -1,24 +1,22 @@
 ---
-version: 4
-parent_version: 10
+version: 6
+parent_version: 12
 ---
 
 # ROOT/domain/specifications
-
-## Intent
 
 Defines the structure of specifications — nodes, logical
 names, frontmatter format, parent and subject
 relationships, and the spec comment format used in
 generated files.
 
-## Contracts
+# Public
 
-### Location
+## Location
 
 Specifications live under `code-from-spec/`.
 
-### Nodes
+## Nodes
 
 Every spec node is a directory containing a `_node.md`
 file. The directory structure is the spec tree — a node's
@@ -41,7 +39,7 @@ config/
   edge_cases.test.md   ← additional test node
 ```
 
-### Logical names
+## Logical names
 
 Every node has a logical name derived from its position in
 the tree. Spec nodes use the `ROOT/` prefix; test nodes
@@ -69,7 +67,7 @@ referenced node but does not change which file is
 resolved. `PathFromLogicalName("ROOT/x/y(z)")` resolves
 to the same file as `PathFromLogicalName("ROOT/x/y")`.
 
-### Parent relationships
+## Parent relationships
 
 - The root node (`ROOT`) has no parent.
 - A spec node's parent is determined by its logical name:
@@ -79,7 +77,7 @@ to the same file as `PathFromLogicalName("ROOT/x/y")`.
   The subject of `TEST/x/y` and `TEST/x/y(name)` is
   `ROOT/x/y`.
 
-### Frontmatter
+## Frontmatter
 
 Every node begins with a YAML frontmatter block. The
 following fields are relevant for staleness verification:
@@ -136,7 +134,7 @@ implements:
 ---
 ```
 
-### Spec comment format
+## Spec comment format
 
 Generated files carry a spec reference comment on the
 first line where a comment is allowed:
