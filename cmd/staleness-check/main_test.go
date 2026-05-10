@@ -1,5 +1,4 @@
-// code-from-spec: TEST/tech_design/main@v11
-// spec: TEST/tech_design/main@v11
+// code-from-spec: TEST/tech_design/main@v13
 //
 // Integration tests for the staleness-check binary.
 // The binary is built once in TestMain and reused across all tests.
@@ -21,8 +20,9 @@ import (
 var binaryPath string
 
 // TestMain builds the binary once and runs all tests.
+// The binary is built from the current package directory (".").
 func TestMain(m *testing.M) {
-	// Create a temporary file path for the binary.
+	// Create a temporary directory to hold the compiled binary.
 	tmpDir, err := os.MkdirTemp("", "staleness-check-test-*")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create temp dir for binary: %v\n", err)
@@ -37,9 +37,8 @@ func TestMain(m *testing.M) {
 	}
 	binaryPath = filepath.Join(tmpDir, binaryName)
 
-	// Build the binary from the current package.
-	// The working directory during tests is the package directory,
-	// so we build the current directory (".").
+	// Build the binary from the current package directory.
+	// During tests, the working directory is the package directory, so "." is correct.
 	cmd := exec.Command("go", "build", "-o", binaryPath, ".")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -79,6 +78,7 @@ func runBinary(t *testing.T, projectRoot string, args ...string) (stdout, stderr
 }
 
 // testWriteFile writes content to a file, creating parent directories as needed.
+// Prefixed with "test" per test convention to avoid collisions with package-level names.
 func testWriteFile(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
@@ -89,9 +89,9 @@ func testWriteFile(t *testing.T, path, content string) {
 	}
 }
 
-// testMakeNodeFile creates a _node.md file at the given path within projectRoot.
+// testMakeNodeFile creates a spec or test node file at relPath within projectRoot.
 // frontmatterLines are raw YAML lines inserted between the --- delimiters.
-// title is the logical name written as the title line (e.g., "ROOT/domain").
+// title is the logical name written as the H1 heading (e.g., "ROOT/domain" or "TEST/domain").
 func testMakeNodeFile(t *testing.T, projectRoot, relPath string, frontmatterLines []string, title string) {
 	t.Helper()
 	var sb strings.Builder
@@ -106,16 +106,18 @@ func testMakeNodeFile(t *testing.T, projectRoot, relPath string, frontmatterLine
 	testWriteFile(t, filepath.Join(projectRoot, relPath), sb.String())
 }
 
-// testMakeGeneratedFile creates a generated file with a spec comment as its first line.
+// testMakeGeneratedFile creates a generated source file with a spec comment as its first line.
+// specComment is the comment body (without the leading "// "), e.g. "code-from-spec: ROOT/domain@v2".
 func testMakeGeneratedFile(t *testing.T, projectRoot, relPath, specComment string) {
 	t.Helper()
 	content := "// " + specComment + "\npackage main\n"
 	testWriteFile(t, filepath.Join(projectRoot, relPath), content)
 }
 
-// ── Help Message ────────────────────────────────────────────────────────────
+// ── Help Message ─────────────────────────────────────────────────────────────
 
-// TestHelpFlag verifies that passing --help prints the help message and exits 0.
+// TestHelpFlag verifies that passing --help prints the help message to stdout and exits 0.
+// Per spec: any argument triggers help output.
 func TestHelpFlag(t *testing.T) {
 	dir := t.TempDir()
 	stdout, _, exitCode := runBinary(t, dir, "--help")
@@ -132,6 +134,7 @@ func TestHelpFlag(t *testing.T) {
 }
 
 // TestHelpArbitraryArg verifies that any argument (not just --help) prints help and exits 0.
+// Per spec: "With any argument (e.g., --help, -h, or anything else)".
 func TestHelpArbitraryArg(t *testing.T) {
 	dir := t.TempDir()
 	stdout, _, exitCode := runBinary(t, dir, "foo")
@@ -147,18 +150,19 @@ func TestHelpArbitraryArg(t *testing.T) {
 	}
 }
 
-// ── Happy Path ───────────────────────────────────────────────────────────────
+// ── Happy Path ────────────────────────────────────────────────────────────────
 
 // TestAllNodesUpToDate verifies the clean output when all nodes are current.
+// Per spec: exit code 0, all three sections empty ([]).
 func TestAllNodesUpToDate(t *testing.T) {
 	dir := t.TempDir()
 
-	// ROOT node: version=1, no parent
+	// ROOT node at version=1, no parent (it is the root).
 	testMakeNodeFile(t, dir, "code-from-spec/_node.md",
 		[]string{"version: 1"},
 		"ROOT",
 	)
-	// ROOT/domain node: version=1, parent_version=1
+	// ROOT/domain node at version=1, parent_version=1 (matches ROOT's version=1).
 	testMakeNodeFile(t, dir, "code-from-spec/domain/_node.md",
 		[]string{"version: 1", "parent_version: 1"},
 		"ROOT/domain",
@@ -170,7 +174,7 @@ func TestAllNodesUpToDate(t *testing.T) {
 		t.Errorf("expected exit code 0, got %d", exitCode)
 	}
 
-	// Expect all sections empty.
+	// Expect all sections to be explicitly empty lists.
 	expectedLines := []string{
 		"spec_staleness: []",
 		"test_staleness: []",
@@ -185,6 +189,7 @@ func TestAllNodesUpToDate(t *testing.T) {
 
 // TestNodeWithUpToDateGeneratedFile verifies that a node with a current generated file
 // produces no staleness entries.
+// Per spec: spec comment version matches node version → exit code 0, all sections empty.
 func TestNodeWithUpToDateGeneratedFile(t *testing.T) {
 	dir := t.TempDir()
 
@@ -201,7 +206,7 @@ func TestNodeWithUpToDateGeneratedFile(t *testing.T) {
 		},
 		"ROOT/domain",
 	)
-	// Generated file with matching spec comment.
+	// Generated file with matching spec comment (v2 = node version).
 	testMakeGeneratedFile(t, dir, "cmd/staleness-check/gen.go", "code-from-spec: ROOT/domain@v2")
 
 	stdout, _, exitCode := runBinary(t, dir)
@@ -222,6 +227,7 @@ func TestNodeWithUpToDateGeneratedFile(t *testing.T) {
 
 // TestNodeWithDependenciesAllCurrent verifies that a node with current dependencies
 // produces no staleness entries.
+// Per spec: depends_on version matches actual node version → exit code 0.
 func TestNodeWithDependenciesAllCurrent(t *testing.T) {
 	dir := t.TempDir()
 
@@ -233,6 +239,7 @@ func TestNodeWithDependenciesAllCurrent(t *testing.T) {
 		[]string{"version: 3", "parent_version: 1"},
 		"ROOT/domain",
 	)
+	// config depends on ROOT/domain at version 3 — which matches domain's current version.
 	testMakeNodeFile(t, dir, "code-from-spec/domain/config/_node.md",
 		[]string{
 			"version: 1",
@@ -260,17 +267,19 @@ func TestNodeWithDependenciesAllCurrent(t *testing.T) {
 	}
 }
 
-// ── Spec Staleness ───────────────────────────────────────────────────────────
+// ── Spec Staleness ────────────────────────────────────────────────────────────
 
 // TestParentChanged verifies that a node with a stale parent_version is flagged.
+// Per spec: parent_version=1 but ROOT is version=2 → parent_changed status, exit code 1.
 func TestParentChanged(t *testing.T) {
 	dir := t.TempDir()
 
-	// ROOT has version=2 but domain still tracks parent_version=1.
+	// ROOT has been updated to version=2.
 	testMakeNodeFile(t, dir, "code-from-spec/_node.md",
 		[]string{"version: 2"},
 		"ROOT",
 	)
+	// domain still tracks parent_version=1, which is now stale.
 	testMakeNodeFile(t, dir, "code-from-spec/domain/_node.md",
 		[]string{"version: 1", "parent_version: 1"},
 		"ROOT/domain",
@@ -290,7 +299,8 @@ func TestParentChanged(t *testing.T) {
 }
 
 // TestMultipleStatusesOnOneNode verifies that wrong_name, parent_changed, and
-// invalid_dependency are all reported for the same node.
+// invalid_dependency are all reported for the same node in a single entry.
+// Per spec: multiple statuses accumulate on one node rather than creating separate entries.
 func TestMultipleStatusesOnOneNode(t *testing.T) {
 	dir := t.TempDir()
 
@@ -298,7 +308,10 @@ func TestMultipleStatusesOnOneNode(t *testing.T) {
 		[]string{"version: 2"},
 		"ROOT",
 	)
-	// Wrong title, parent_version=1 but parent is version=2, depends on missing node.
+	// Three problems:
+	//   1. Title says "ROOT/domain/wrong" but logical name derived from path is "ROOT/domain" → wrong_name
+	//   2. parent_version=1 but ROOT is version=2 → parent_changed
+	//   3. depends_on ROOT/missing which doesn't exist → invalid_dependency
 	testMakeNodeFile(t, dir, "code-from-spec/domain/_node.md",
 		[]string{
 			"version: 1",
@@ -307,7 +320,7 @@ func TestMultipleStatusesOnOneNode(t *testing.T) {
 			"  - path: ROOT/missing",
 			"    version: 1",
 		},
-		"ROOT/domain/wrong", // wrong title — should be ROOT/domain
+		"ROOT/domain/wrong", // intentionally wrong title
 	)
 
 	stdout, _, exitCode := runBinary(t, dir)
@@ -329,9 +342,11 @@ func TestMultipleStatusesOnOneNode(t *testing.T) {
 	}
 }
 
-// ── Test Staleness ───────────────────────────────────────────────────────────
+// ── Test Staleness ────────────────────────────────────────────────────────────
 
-// TestTestNodeSubjectChanged verifies that a test node flagged when the subject version changed.
+// TestTestNodeSubjectChanged verifies that a test node is flagged when its
+// subject (spec node) version has advanced beyond subject_version.
+// Per spec: subject_version=1 but subject is version=2 → subject_changed, exit code 1.
 func TestTestNodeSubjectChanged(t *testing.T) {
 	dir := t.TempDir()
 
@@ -339,12 +354,12 @@ func TestTestNodeSubjectChanged(t *testing.T) {
 		[]string{"version: 1"},
 		"ROOT",
 	)
-	// domain at version 2.
+	// domain has been updated to version=2.
 	testMakeNodeFile(t, dir, "code-from-spec/domain/_node.md",
 		[]string{"version: 2", "parent_version: 1"},
 		"ROOT/domain",
 	)
-	// Test node still tracks subject_version=1 but domain is at version=2.
+	// Test node still tracks subject_version=1, but domain is now at version=2.
 	testMakeNodeFile(t, dir, "code-from-spec/domain/default.test.md",
 		[]string{"version: 1", "subject_version: 1"},
 		"TEST/domain",
@@ -363,9 +378,11 @@ func TestTestNodeSubjectChanged(t *testing.T) {
 	}
 }
 
-// ── Code Staleness ───────────────────────────────────────────────────────────
+// ── Code Staleness ────────────────────────────────────────────────────────────
 
-// TestGeneratedFileIsStale verifies that a generated file with an older spec comment is flagged.
+// TestGeneratedFileIsStale verifies that a generated file referencing an older
+// spec version is flagged as stale.
+// Per spec: file says v2 but node is v3 → stale status, exit code 1.
 func TestGeneratedFileIsStale(t *testing.T) {
 	dir := t.TempDir()
 
@@ -373,6 +390,7 @@ func TestGeneratedFileIsStale(t *testing.T) {
 		[]string{"version: 1"},
 		"ROOT",
 	)
+	// domain is at version=3, implements gen.go.
 	testMakeNodeFile(t, dir, "code-from-spec/domain/_node.md",
 		[]string{
 			"version: 3",
@@ -382,7 +400,7 @@ func TestGeneratedFileIsStale(t *testing.T) {
 		},
 		"ROOT/domain",
 	)
-	// Generated file says v2 but node is at version 3.
+	// Generated file has spec comment at v2, but node is at v3 — stale.
 	testMakeGeneratedFile(t, dir, "cmd/staleness-check/gen.go", "code-from-spec: ROOT/domain@v2")
 
 	stdout, _, exitCode := runBinary(t, dir)
@@ -401,7 +419,9 @@ func TestGeneratedFileIsStale(t *testing.T) {
 	}
 }
 
-// TestGeneratedFileMissing verifies that a missing implements file is reported.
+// TestGeneratedFileMissing verifies that a file listed in implements but absent
+// on disk is reported with status=missing.
+// Per spec: file does not exist → missing status, exit code 1.
 func TestGeneratedFileMissing(t *testing.T) {
 	dir := t.TempDir()
 
@@ -418,7 +438,7 @@ func TestGeneratedFileMissing(t *testing.T) {
 		},
 		"ROOT/domain",
 	)
-	// Do NOT create cmd/staleness-check/nonexistent.go.
+	// Intentionally do NOT create cmd/staleness-check/nonexistent.go.
 
 	stdout, _, exitCode := runBinary(t, dir)
 
@@ -430,40 +450,43 @@ func TestGeneratedFileMissing(t *testing.T) {
 	}
 }
 
-// ── Mixed Results ────────────────────────────────────────────────────────────
+// ── Mixed Results ─────────────────────────────────────────────────────────────
 
-// TestMixedResults verifies that spec, test, and code staleness are all reported together.
+// TestMixedResults verifies that spec, test, and code staleness are all reported
+// together in the same run.
+// Per spec: all three sections must have entries; gen_test.go remains up to date.
 func TestMixedResults(t *testing.T) {
 	dir := t.TempDir()
 
-	// ROOT at version 2 — domain's parent_version=1 will be stale.
+	// ROOT at version=2 — domain's parent_version=1 will be stale.
 	testMakeNodeFile(t, dir, "code-from-spec/_node.md",
 		[]string{"version: 2"},
 		"ROOT",
 	)
-	// domain at version 3, implements gen.go.
+	// domain at version=3, parent_version=1 (stale: ROOT is v2), implements gen.go.
 	testMakeNodeFile(t, dir, "code-from-spec/domain/_node.md",
 		[]string{
 			"version: 3",
-			"parent_version: 1", // stale: parent is v2
+			"parent_version: 1", // stale: ROOT is now v2
 			"implements:",
 			"  - cmd/staleness-check/gen.go",
 		},
 		"ROOT/domain",
 	)
-	// Test node: subject_version=1 but domain is v3.
+	// Test node: subject_version=1 but domain is v3 → subject_changed.
+	// Also implements gen_test.go (which will be up to date).
 	testMakeNodeFile(t, dir, "code-from-spec/domain/default.test.md",
 		[]string{
 			"version: 1",
-			"subject_version: 1", // stale: subject is v3
+			"subject_version: 1", // stale: domain is v3
 			"implements:",
 			"  - cmd/staleness-check/gen_test.go",
 		},
 		"TEST/domain",
 	)
-	// gen.go says v2 but domain is v3 — stale.
+	// gen.go spec comment says v2, but domain is v3 — stale.
 	testMakeGeneratedFile(t, dir, "cmd/staleness-check/gen.go", "code-from-spec: ROOT/domain@v2")
-	// gen_test.go says v1 and test node is v1 — up to date.
+	// gen_test.go spec comment says v1, and test node is v1 — up to date.
 	testMakeGeneratedFile(t, dir, "cmd/staleness-check/gen_test.go", "code-from-spec: TEST/domain@v1")
 
 	stdout, _, exitCode := runBinary(t, dir)
@@ -484,7 +507,7 @@ func TestMixedResults(t *testing.T) {
 	if !strings.Contains(stdout, "stale") {
 		t.Errorf("expected stdout to contain 'stale', got:\n%s", stdout)
 	}
-	// All three top-level sections must appear.
+	// All three top-level section keys must be present.
 	if !strings.Contains(stdout, "spec_staleness:") {
 		t.Errorf("expected stdout to contain 'spec_staleness:', got:\n%s", stdout)
 	}
@@ -496,10 +519,11 @@ func TestMixedResults(t *testing.T) {
 	}
 }
 
-// ── Operational Error ────────────────────────────────────────────────────────
+// ── Operational Error ─────────────────────────────────────────────────────────
 
-// TestMissingCodeFromSpecDir verifies that exit code 2 and a stderr error are
-// produced when the code-from-spec/ directory is absent.
+// TestMissingCodeFromSpecDir verifies that exit code 2 and a non-empty stderr
+// error message are produced when the code-from-spec/ directory is absent.
+// Per spec: DiscoverNodes failure → print to stderr, exit 2.
 func TestMissingCodeFromSpecDir(t *testing.T) {
 	// An empty TempDir has no code-from-spec/ subdirectory.
 	dir := t.TempDir()
@@ -514,22 +538,25 @@ func TestMissingCodeFromSpecDir(t *testing.T) {
 	}
 }
 
-// ── Output Ordering ──────────────────────────────────────────────────────────
+// ── Output Ordering ───────────────────────────────────────────────────────────
 
 // TestNodesSortedAlphabetically verifies that staleness entries appear sorted
 // by logical name (ROOT/arch before ROOT/domain).
+// Per spec: nodes are processed sorted alphabetically by logical name.
 func TestNodesSortedAlphabetically(t *testing.T) {
 	dir := t.TempDir()
 
-	// ROOT at version 2; both child nodes track parent_version=1 — both stale.
+	// ROOT at version=2; both child nodes track parent_version=1 — both stale.
 	testMakeNodeFile(t, dir, "code-from-spec/_node.md",
 		[]string{"version: 2"},
 		"ROOT",
 	)
+	// domain added first, but should appear second in output (alphabetical).
 	testMakeNodeFile(t, dir, "code-from-spec/domain/_node.md",
 		[]string{"version: 1", "parent_version: 1"},
 		"ROOT/domain",
 	)
+	// arch added second, but should appear first in output (alphabetical).
 	testMakeNodeFile(t, dir, "code-from-spec/arch/_node.md",
 		[]string{"version: 1", "parent_version: 1"},
 		"ROOT/arch",
@@ -549,7 +576,7 @@ func TestNodesSortedAlphabetically(t *testing.T) {
 		t.Errorf("expected stdout to contain 'ROOT/domain', got:\n%s", stdout)
 	}
 
-	// ROOT/arch must appear before ROOT/domain.
+	// ROOT/arch must appear before ROOT/domain in the output.
 	archIdx := strings.Index(stdout, "ROOT/arch")
 	domainIdx := strings.Index(stdout, "ROOT/domain")
 	if archIdx >= domainIdx {

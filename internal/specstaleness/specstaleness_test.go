@@ -1,4 +1,4 @@
-// code-from-spec: TEST/tech_design/internal/spec_staleness@v14
+// code-from-spec: TEST/tech_design/internal/spec_staleness@v15
 package specstaleness
 
 import (
@@ -161,6 +161,9 @@ func TestAllChecksPass_NamedTestNode(t *testing.T) {
 func TestWrongName_TESTCanonicalVsTESTDefault(t *testing.T) {
 	// LogicalNamesMatch treats TEST/domain/config and
 	// TEST/domain/config(default) as equal — no wrong_name.
+	// The node's logical name is the canonical form (no qualifier),
+	// while the frontmatter title uses the explicit "(default)" qualifier.
+	// The spec states these must be treated as equal by LogicalNamesMatch.
 	cache := map[string]*frontmatter.Frontmatter{
 		"code-from-spec/domain/config/default.test.md": testMakeFM(
 			testIntPtr(1), nil, testIntPtr(2), "TEST/domain/config(default)", nil,
@@ -610,6 +613,7 @@ func TestDependencyChanged(t *testing.T) {
 func TestDependencyWithSubsectionQualifier(t *testing.T) {
 	// Dependency path has a subsection qualifier "(interface)" that
 	// should be stripped during resolution. Version matches — no staleness.
+	// PathFromLogicalName strips the qualifier before resolving the path.
 	cache := map[string]*frontmatter.Frontmatter{
 		"code-from-spec/domain/config/_node.md": testMakeFM(
 			testIntPtr(2), testIntPtr(5), nil, "ROOT/domain/config",

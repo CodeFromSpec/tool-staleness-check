@@ -1,8 +1,17 @@
-// code-from-spec: ROOT/tech_design/main@v19
+// code-from-spec: ROOT/tech_design/main@v21
 //
 // Entry point for the staleness-check CLI tool.
 // Orchestrates discovery, frontmatter parsing, staleness
 // verification, and YAML output.
+//
+// Execution flow (per ROOT/tech_design/main spec):
+//  1. If any CLI argument is passed → print help and exit 0.
+//  2. Discover all spec and test nodes via DiscoverNodes.
+//  3. Build a frontmatter cache (file path → *Frontmatter, nil on failure).
+//  4. Run spec staleness checks (sorted alphabetically by logical name).
+//  5. Run test staleness checks (sorted alphabetically by logical name).
+//  6. Run code staleness checks across all nodes (sorted alphabetically).
+//  7. Emit YAML to stdout; exit 0 (clean), 1 (problems), or 2 (op error).
 package main
 
 import (
@@ -17,7 +26,8 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
-// helpMessage is printed when any argument is passed.
+// helpMessage is printed verbatim when any argument is passed.
+// The exact wording is prescribed by ROOT/tech_design/main — do not alter it.
 const helpMessage = `staleness-check — verifies spec and code staleness for a Code from Spec project.
 
 Usage: staleness-check
@@ -61,23 +71,25 @@ Code staleness statuses:
 
 Exit codes: 0 = no problems, 1 = problems found, 2 = operational error.`
 
-// specStalenessEntry represents one spec or test node with staleness problems.
-// YAML field names match the output format prescribed by ROOT/domain/output.
+// specStalenessEntry represents one spec or test node that has staleness problems.
+// YAML field names are prescribed by ROOT/domain/output — must not be renamed.
 type specStalenessEntry struct {
 	Node     string   `yaml:"node"`
 	Statuses []string `yaml:"statuses"`
 }
 
 // codeStalenessEntry represents one generated file with a staleness problem.
-// YAML field names match the output format prescribed by ROOT/domain/output.
+// YAML field names are prescribed by ROOT/domain/output — must not be renamed.
 type codeStalenessEntry struct {
 	Node   string `yaml:"node"`
 	File   string `yaml:"file"`
 	Status string `yaml:"status"`
 }
 
-// output is the top-level YAML structure emitted to stdout.
-// Field order and names match ROOT/domain/output.
+// output is the top-level YAML document emitted to stdout.
+// Three sections are always present (empty list when no problems), in order:
+// spec_staleness → test_staleness → code_staleness.
+// Field order in the struct determines YAML key order with go-yaml.
 type output struct {
 	SpecStaleness []specStalenessEntry `yaml:"spec_staleness"`
 	TestStaleness []specStalenessEntry `yaml:"test_staleness"`
@@ -85,34 +97,40 @@ type output struct {
 }
 
 func main() {
-	// If any argument is passed, print help and exit 0.
+	// If any argument is passed, print help to stdout and exit 0.
+	// The spec says "any argument", so we do not inspect what was passed.
 	if len(os.Args) > 1 {
 		fmt.Println(helpMessage)
 		os.Exit(0)
 	}
 
-	// Step 1: Discover all spec and test nodes.
+	// Step 1: Discover all spec nodes (_node.md) and test nodes (*.test.md)
+	// under the code-from-spec/ directory.
 	specNodes, testNodes, err := discovery.DiscoverNodes()
 	if err != nil {
-		// Operational error — print to stderr and exit 2.
+		// DiscoverNodes failure is an operational error — stderr, exit 2.
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(2)
 	}
 
 	// Step 2: Build the frontmatter cache.
-	// Maps file path → *Frontmatter (nil on parse failure).
+	// Every discovered node gets an entry: *Frontmatter on success, nil on failure.
+	// Frontmatter parse failures are NOT operational errors; they surface later
+	// as invalid_frontmatter statuses during staleness verification.
 	cache := buildFrontmatterCache(specNodes, testNodes)
 
-	// Step 3: Run spec staleness for each spec node, sorted by logical name.
-	// specNodes are already sorted by DiscoverNodes, but we sort again to be safe.
+	// Step 3: Spec staleness — check each spec node, sorted by logical name.
+	// DiscoverNodes already returns sorted slices, but we sort again for safety.
 	sortNodesByName(specNodes)
 	specResults := collectSpecStaleness(specNodes, cache)
 
-	// Step 4: Run test staleness for each test node, sorted by logical name.
+	// Step 4: Test staleness — check each test node, sorted by logical name.
 	sortNodesByName(testNodes)
 	testResults := collectSpecStaleness(testNodes, cache)
 
-	// Step 5: Run code staleness for all nodes (spec + test), sorted by logical name.
+	// Step 5: Code staleness — check all nodes (spec + test), sorted by logical name.
+	// The combined slice is re-sorted so that interleaved ROOT/TEST names come out
+	// in a single alphabetical order as required by the spec.
 	allNodes := make([]discovery.DiscoveredNode, 0, len(specNodes)+len(testNodes))
 	allNodes = append(allNodes, specNodes...)
 	allNodes = append(allNodes, testNodes...)
@@ -128,30 +146,37 @@ func main() {
 
 	data, err := yaml.Marshal(out)
 	if err != nil {
-		// This should not happen with well-formed structs, but handle it.
+		// Marshalling a well-typed struct should never fail, but the spec
+		// requires that every error is handled — stderr, exit 2.
 		fmt.Fprintf(os.Stderr, "Error: failed to marshal YAML output: %v\n", err)
 		os.Exit(2)
 	}
 
 	fmt.Print(string(data))
 
-	// Step 7: Exit with appropriate code.
+	// Step 7: Exit with the appropriate code.
+	//   0 — all three sections are empty (no problems).
+	//   1 — at least one section has entries (problems found).
 	if len(specResults) > 0 || len(testResults) > 0 || len(codeResults) > 0 {
 		os.Exit(1)
 	}
 	os.Exit(0)
 }
 
-// buildFrontmatterCache parses frontmatter for every discovered node
-// and returns a map from file path to *Frontmatter. On parse failure,
-// the entry is nil (not absent).
-func buildFrontmatterCache(specNodes, testNodes []discovery.DiscoveredNode) map[string]*frontmatter.Frontmatter {
+// buildFrontmatterCache parses frontmatter for every discovered node and
+// returns a map keyed by file path. A nil value means parsing failed for
+// that file — the key is still present so callers can distinguish "not
+// discovered" from "discovered but unparseable".
+func buildFrontmatterCache(
+	specNodes, testNodes []discovery.DiscoveredNode,
+) map[string]*frontmatter.Frontmatter {
 	cache := make(map[string]*frontmatter.Frontmatter)
 
 	for _, node := range specNodes {
 		fm, err := frontmatter.ParseFrontmatter(node.FilePath)
 		if err != nil {
-			// Store nil — parse failure is not an operational error.
+			// Parse failure → store nil so callers know the file exists
+			// but its frontmatter is unreadable.
 			cache[node.FilePath] = nil
 		} else {
 			cache[node.FilePath] = fm
@@ -170,25 +195,35 @@ func buildFrontmatterCache(specNodes, testNodes []discovery.DiscoveredNode) map[
 	return cache
 }
 
-// sortNodesByName sorts a slice of DiscoveredNode alphabetically by LogicalName.
+// sortNodesByName sorts a slice of DiscoveredNode in-place, alphabetically
+// by LogicalName. This ensures output sections are deterministic across runs.
 func sortNodesByName(nodes []discovery.DiscoveredNode) {
 	sort.Slice(nodes, func(i, j int) bool {
 		return nodes[i].LogicalName < nodes[j].LogicalName
 	})
 }
 
-// collectSpecStaleness runs CheckSpecStaleness for each node and collects
-// results into specStalenessEntry values. Only nodes with problems are included.
-func collectSpecStaleness(nodes []discovery.DiscoveredNode, cache map[string]*frontmatter.Frontmatter) []specStalenessEntry {
-	var entries []specStalenessEntry
+// collectSpecStaleness runs CheckSpecStaleness for each node in the slice
+// and aggregates all returned statuses into a single entry per node.
+// Nodes with no problems are omitted. Always returns a non-nil slice so
+// that go-yaml emits "[]" rather than "null" for empty sections.
+func collectSpecStaleness(
+	nodes []discovery.DiscoveredNode,
+	cache map[string]*frontmatter.Frontmatter,
+) []specStalenessEntry {
+	// Pre-allocate as empty (not nil) so YAML serializes as [].
+	entries := make([]specStalenessEntry, 0)
 
 	for _, node := range nodes {
 		results := specstaleness.CheckSpecStaleness(node, cache)
 		if len(results) == 0 {
+			// Node is clean — omit from output.
 			continue
 		}
 
-		// Collect all statuses for this node into a single entry.
+		// Collect all status strings for this node into one entry.
+		// The spec allows multiple statuses per node (e.g., wrong_name +
+		// parent_changed + dependency_changed simultaneously).
 		statuses := make([]string, 0, len(results))
 		for _, r := range results {
 			statuses = append(statuses, r.Status)
@@ -200,20 +235,23 @@ func collectSpecStaleness(nodes []discovery.DiscoveredNode, cache map[string]*fr
 		})
 	}
 
-	// Return empty slice (not nil) so YAML serializes as [].
-	if entries == nil {
-		entries = []specStalenessEntry{}
-	}
 	return entries
 }
 
-// collectCodeStaleness runs CheckCodeStaleness for each node and collects
-// results into codeStalenessEntry values. Only files with problems are included.
-func collectCodeStaleness(nodes []discovery.DiscoveredNode, cache map[string]*frontmatter.Frontmatter) []codeStalenessEntry {
-	var entries []codeStalenessEntry
+// collectCodeStaleness runs CheckCodeStaleness for each node in the slice
+// and collects one entry per problematic file. Files that are up to date
+// are omitted. Always returns a non-nil slice so that go-yaml emits "[]"
+// rather than "null" for an empty section.
+func collectCodeStaleness(
+	nodes []discovery.DiscoveredNode,
+	cache map[string]*frontmatter.Frontmatter,
+) []codeStalenessEntry {
+	// Pre-allocate as empty (not nil) so YAML serializes as [].
+	entries := make([]codeStalenessEntry, 0)
 
 	for _, node := range nodes {
 		results := codestaleness.CheckCodeStaleness(node, cache)
+		// Each result represents one file with one status (sequential checks).
 		for _, r := range results {
 			entries = append(entries, codeStalenessEntry{
 				Node:   r.Node,
@@ -223,9 +261,5 @@ func collectCodeStaleness(nodes []discovery.DiscoveredNode, cache map[string]*fr
 		}
 	}
 
-	// Return empty slice (not nil) so YAML serializes as [].
-	if entries == nil {
-		entries = []codeStalenessEntry{}
-	}
 	return entries
 }
